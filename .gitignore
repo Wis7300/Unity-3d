@@ -3,3 +3,14 @@ Library/
 Temp/
 Logs/
 Build/
+*.csproj
+*.sln
+*.unityproj
+*.vsproj
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
