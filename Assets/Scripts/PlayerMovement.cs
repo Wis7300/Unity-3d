@@ -2,57 +2,81 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    public float moveSpeed = 5f;
-    public float dashForce = 5f;
-
+    [Header("Movement Settings")]
+    public float speed = 5f;
     private Rigidbody rb;
-    private Vector3 movement;
 
+    [Header("Dash Settings")]
+    public float dashForce = 20f;
+    public float dashDuration = 0.2f;
     public float dashCooldown = 1f;
-    private float dashCooldownTimer = 0f;
-    private bool isDashing = false;
 
+    private float dashTimer;
+    private float cooldownTimer;
+    private Vector3 dashDirection;
+    private bool isDashing;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
+        
+        // Empêche le personnage de tomber ou de rouler sur le côté
+        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        
+        // Améliore la détection des collisions lors du Dash
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
     }
 
     void Update()
     {
-        float horizontal = Input.GetAxisRaw("Horizontal");
-        float vertical = Input.GetAxisRaw("Vertical");
+        // --- DÉTECTION DES TOUCHES (AZERTY) ---
+        float moveX = 0;
+        float moveZ = 0;
 
-        movement = new Vector3(horizontal, 0f, vertical).normalized;
+        if (Input.GetKey(KeyCode.Z)) moveZ = 1;  // Avancer
+        if (Input.GetKey(KeyCode.S)) moveZ = -1; // Reculer
+        if (Input.GetKey(KeyCode.D)) moveX = 1;  // Droite
+        if (Input.GetKey(KeyCode.Q)) moveX = -1; // Gauche
 
-        if (Input.GetKeyDown(KeyCode.Space) && dashCooldownTimer <= 0f)
+        Vector3 inputDirection = new Vector3(moveX, 0, moveZ).normalized;
+
+        // --- GESTION DU DASH ---
+        if (Input.GetKeyDown(KeyCode.Space) && cooldownTimer <= 0)
         {
-            if (movement != Vector3.zero)
-            {
-                movement.y = 0f;
-                rb.AddForce(movement * dashForce, ForceMode.Impulse);
-                dashCooldownTimer = dashCooldown;
-                FindFirstObjectByType<CameraFollow>().TriggerDashEffect();
-            }
+            isDashing = true;
+            dashTimer = dashDuration;
+            cooldownTimer = dashCooldown;
+            // Si on ne bouge pas, on dashe vers l'avant de l'objet
+            dashDirection = inputDirection.magnitude > 0 ? inputDirection : transform.forward;
         }
 
-    }
+        if (cooldownTimer > 0) 
+            cooldownTimer -= Time.deltaTime;
 
-    void FixedUpdate()
-    {
-        if (!isDashing)
+        // --- CALCUL DU MOUVEMENT ---
+        Vector3 velocity;
+
+        if (isDashing && dashTimer > 0)
         {
-            rb.linearVelocity = new Vector3(
-            movement.x * moveSpeed,
-            rb.linearVelocity.y,
-            movement.z * moveSpeed);
+            velocity = dashDirection * dashForce;
+            dashTimer -= Time.deltaTime;
+            
+            if (dashTimer <= 0) 
+                isDashing = false;
+        }
+        else
+        {
+            velocity = inputDirection * speed;
         }
 
-        if (dashCooldownTimer > 0f)
-        {
-            dashCooldownTimer -= Time.deltaTime;
-        }
+        // --- APPLICATION DU MOUVEMENT ---
+        // On utilise MovePosition pour que la physique Unity gère bien les murs
+        rb.MovePosition(rb.position + velocity * Time.deltaTime);
 
+        // OPTIONNEL : Faire pivoter le personnage vers la direction de marche
+        if (inputDirection != Vector3.zero && !isDashing)
+        {
+            transform.forward = Vector3.Slerp(transform.forward, inputDirection, Time.deltaTime * 10f);
+        }
     }
 }
