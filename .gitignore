@@ -1,12 +1,20 @@
-.vs/
-Library/
-Temp/
-Logs/
-Build/
+# --- Unity Standard ---
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[MemoryCaptures]/
+
+# --- Fichiers de solution Visual Studio / Rider ---
 *.csproj
-*.sln
 *.unityproj
-*.vsproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
 *.pidb
 *.booproj
 *.svd
@@ -14,3 +22,12 @@ Build/
 *.mdb
 *.opendb
 *.VC.db
+
+# --- Fichiers système ---
+.DS_Store
+Thumbs.db
+
+# --- Crashlytics / Assets Unity ---
+sysinfo.txt
+*.apk
+*.unitypackage
