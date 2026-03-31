@@ -31,3 +31,4 @@ Thumbs.db
 sysinfo.txt
 *.apk
 *.unitypackage
+/[Uu]serSettings/
