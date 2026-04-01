@@ -4837,8 +4837,8 @@ Camera:
   m_GameObject: {fileID: 330585543}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0.120238535, g: 0.124841794, b: 0.13207549, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -4861,7 +4861,7 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 1000
-  field of view: 60
+  field of view: 68.6
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
@@ -4887,13 +4887,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -1, z: -0, w: 0}
-  m_LocalPosition: {x: 1.03, y: 4.22, z: 8.05}
+  m_LocalRotation: {x: 0, y: -0.9727557, z: 0.23183289, w: 0}
+  m_LocalPosition: {x: 0, y: 4.35, z: 6.07}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1533612647}
-  m_LocalEulerAnglesHint: {x: 180, y: 0, z: 180}
+  m_Father: {fileID: 827496732}
+  m_LocalEulerAnglesHint: {x: 153.19, y: 0, z: 180}
 --- !u!114 &330585547
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9264,7 +9264,7 @@ GameObject:
   - component: {fileID: 827496736}
   - component: {fileID: 827496737}
   m_Layer: 0
-  m_Name: player_physic
+  m_Name: PLAYER
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -9279,11 +9279,12 @@ Transform:
   m_GameObject: {fileID: 827496731}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.34, y: 1.56, z: -0.36542988}
+  m_LocalPosition: {x: -14.3121395, y: 2.02873, z: -3.7645998}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1533612647}
+  m_Children:
+  - {fileID: 330585546}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &827496733
 CapsuleCollider:
@@ -9406,8 +9407,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
   speed: 5
   dashForce: 20
-  dashDuration: 0.2
-  dashCooldown: 1
+  dashDuration: 0.25
+  dashCooldown: 0.5
+  mainCamera: {fileID: 330585545}
+  dashFOVMultiplier: 0.982
+  smoothSpeed: 5
 --- !u!1 &829712921 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7416340752269078550, guid: 1069f02ee687708458b3f4e898062a2c, type: 3}
@@ -17314,39 +17318,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!1 &1533612645
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1533612647}
-  m_Layer: 0
-  m_Name: PLAYER
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1533612647
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1533612645}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -14.65214, y: 0.46873, z: -3.39917}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 330585546}
-  - {fileID: 827496732}
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1535836321 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4520805923275401889, guid: 8176fd2df383482479b506e465bdc647, type: 3}
@@ -24697,4 +24668,4 @@ SceneRoots:
   - {fileID: 410087041}
   - {fileID: 832575519}
   - {fileID: 189744513}
-  - {fileID: 1533612647}
+  - {fileID: 827496732}

@@ -1,8 +1,8 @@
 using UnityEngine;
+using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    [Header("Movement Settings")]
     public float speed = 5f;
     private Rigidbody rb;
 
@@ -10,6 +10,13 @@ public class PlayerMovement : MonoBehaviour
     public float dashForce = 20f;
     public float dashDuration = 0.2f;
     public float dashCooldown = 1f;
+
+    [Header("Camera Smooth Effect")]
+    public Camera mainCamera;
+    public float dashFOVMultiplier = 1.2f; // Jusqu'où le FOV augmente (ex: 1.2 = +20%)
+    public float smoothSpeed = 5f;         // Vitesse du retour à la normale
+    private float targetFOV;
+    private float defaultFOV;
 
     private float dashTimer;
     private float cooldownTimer;
@@ -19,24 +26,25 @@ public class PlayerMovement : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        
-        // Empêche le personnage de tomber ou de rouler sur le côté
-        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
-        
-        // Améliore la détection des collisions lors du Dash
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+
+        if (mainCamera != null)
+        {
+            defaultFOV = mainCamera.fieldOfView;
+            targetFOV = defaultFOV;
+        }
     }
 
     void Update()
     {
-        // --- DÉTECTION DES TOUCHES (AZERTY) ---
+        // --- DÉTECTION DES TOUCHES (Z-S-Q-D) ---
         float moveX = 0;
         float moveZ = 0;
-
-        if (Input.GetKey(KeyCode.Z)) moveZ = 1;  // Avancer
-        if (Input.GetKey(KeyCode.S)) moveZ = -1; // Reculer
-        if (Input.GetKey(KeyCode.D)) moveX = 1;  // Droite
-        if (Input.GetKey(KeyCode.Q)) moveX = -1; // Gauche
+        if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.Z)) moveZ = 1;
+        if (Input.GetKey(KeyCode.W)) moveZ = -1;
+        if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.Q)) moveX = -1;
+        if (Input.GetKey(KeyCode.A)) moveX = 1;
 
         Vector3 inputDirection = new Vector3(moveX, 0, moveZ).normalized;
 
@@ -46,37 +54,40 @@ public class PlayerMovement : MonoBehaviour
             isDashing = true;
             dashTimer = dashDuration;
             cooldownTimer = dashCooldown;
-            // Si on ne bouge pas, on dashe vers l'avant de l'objet
             dashDirection = inputDirection.magnitude > 0 ? inputDirection : transform.forward;
+
+            // On définit la cible du FOV (effet de zoom arrière/vitesse)
+            targetFOV = defaultFOV * dashFOVMultiplier;
         }
 
-        if (cooldownTimer > 0) 
-            cooldownTimer -= Time.deltaTime;
+        if (cooldownTimer > 0) cooldownTimer -= Time.deltaTime;
 
         // --- CALCUL DU MOUVEMENT ---
-        Vector3 velocity;
-
+        Vector3 currentMove;
         if (isDashing && dashTimer > 0)
         {
-            velocity = dashDirection * dashForce;
+            currentMove = dashDirection * dashForce;
             dashTimer -= Time.deltaTime;
-            
-            if (dashTimer <= 0) 
+
+            if (dashTimer <= 0)
+            {
                 isDashing = false;
+                targetFOV = defaultFOV; // On revient au FOV de base
+            }
         }
         else
         {
-            velocity = inputDirection * speed;
+            currentMove = inputDirection * speed;
+            targetFOV = defaultFOV; // Sécurité pour revenir au FOV de base
         }
 
-        // --- APPLICATION DU MOUVEMENT ---
-        // On utilise MovePosition pour que la physique Unity gère bien les murs
-        rb.MovePosition(rb.position + velocity * Time.deltaTime);
-
-        // OPTIONNEL : Faire pivoter le personnage vers la direction de marche
-        if (inputDirection != Vector3.zero && !isDashing)
+        // --- APPLICATION DU SMOOTH CAMERA ---
+        if (mainCamera != null)
         {
-            transform.forward = Vector3.Slerp(transform.forward, inputDirection, Time.deltaTime * 10f);
+            // Lerp permet une transition fluide entre le FOV actuel et la cible
+            mainCamera.fieldOfView = Mathf.Lerp(mainCamera.fieldOfView, targetFOV, Time.deltaTime * smoothSpeed);
         }
+
+        rb.MovePosition(rb.position + currentMove * Time.deltaTime);
     }
 }
