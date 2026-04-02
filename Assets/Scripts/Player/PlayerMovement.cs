@@ -16,15 +16,15 @@ public class PlayerMovement : MonoBehaviour
     private Vector3 dashDirection;
     private bool isDashing;
 
+    private Vector3 currentVelocity;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         
-        // Empêche le personnage de tomber ou de rouler sur le côté
         rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
-        
-        // Améliore la détection des collisions lors du Dash
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+        rb.interpolation = RigidbodyInterpolation.Interpolate;
     }
 
     void Update()
@@ -33,10 +33,9 @@ public class PlayerMovement : MonoBehaviour
         float moveX = 0;
         float moveZ = 0;
 
-        if (Input.GetKey(KeyCode.Z)) moveZ = 1;  // Avancer
-        if (Input.GetKey(KeyCode.S)) moveZ = -1; // Reculer
-        if (Input.GetKey(KeyCode.D)) moveX = 1;  // Droite
-        if (Input.GetKey(KeyCode.Q)) moveX = -1; // Gauche
+        moveZ = Input.GetAxis("Vertical");
+        moveX = Input.GetAxis("Horizontal");
+        
 
         Vector3 inputDirection = new Vector3(moveX, 0, moveZ).normalized;
 
@@ -53,15 +52,14 @@ public class PlayerMovement : MonoBehaviour
         if (cooldownTimer > 0) 
             cooldownTimer -= Time.deltaTime;
 
-        // --- CALCUL DU MOUVEMENT ---
         Vector3 velocity;
 
         if (isDashing && dashTimer > 0)
         {
             velocity = dashDirection * dashForce;
             dashTimer -= Time.deltaTime;
-            
-            if (dashTimer <= 0) 
+
+            if (dashTimer <= 0)
                 isDashing = false;
         }
         else
@@ -69,14 +67,19 @@ public class PlayerMovement : MonoBehaviour
             velocity = inputDirection * speed;
         }
 
-        // --- APPLICATION DU MOUVEMENT ---
-        // On utilise MovePosition pour que la physique Unity gère bien les murs
-        rb.MovePosition(rb.position + velocity * Time.deltaTime);
+        // 👉 IMPORTANT : on stocke juste
+        currentVelocity = velocity;
+
+
 
         // OPTIONNEL : Faire pivoter le personnage vers la direction de marche
         if (inputDirection != Vector3.zero && !isDashing)
         {
             transform.forward = Vector3.Slerp(transform.forward, inputDirection, Time.deltaTime * 10f);
         }
+    }
+    private void FixedUpdate()
+    {
+        rb.linearVelocity = currentVelocity;
     }
 }

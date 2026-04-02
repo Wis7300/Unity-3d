@@ -32,3 +32,6 @@ sysinfo.txt
 *.apk
 *.unitypackage
 /[Uu]serSettings/
+
+# --- Truc ChaGPT ---
+.vs/
