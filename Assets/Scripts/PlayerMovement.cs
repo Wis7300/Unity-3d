@@ -41,10 +41,10 @@ public class PlayerMovement : MonoBehaviour
         // --- DÉTECTION DES TOUCHES (Z-S-Q-D) ---
         float moveX = 0;
         float moveZ = 0;
-        if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.Z)) moveZ = 1;
-        if (Input.GetKey(KeyCode.W)) moveZ = -1;
-        if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.Q)) moveX = -1;
-        if (Input.GetKey(KeyCode.A)) moveX = 1;
+        if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.Z)) moveZ = 1;
+        if (Input.GetKey(KeyCode.S)) moveZ = -1;
+        if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.Q)) moveX = -1;
+        if (Input.GetKey(KeyCode.D)) moveX = 1;
 
         Vector3 inputDirection = new Vector3(moveX, 0, moveZ).normalized;
 
