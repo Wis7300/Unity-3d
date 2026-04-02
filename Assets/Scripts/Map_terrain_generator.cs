@@ -8,101 +8,127 @@ public class MapGenerator : MonoBehaviour
     public Transform container;
     public int size = 50;
 
-    [Header("Paramètres Gorge")]
-    public int pathWidth = 6;
-    public int maxWallHeight = 10;
-    public float mossThreshold = 0.6f;
-
-    [Header("Matériaux")]
+    [Header("Matériaux Pierres (1,2,3)")]
     public Material[] stoneMaterials;
+    [Header("Matériaux Mousses (1,2,3)")]
     public Material[] mossMaterials;
 
-    private int[,] heightMap;
+    [Header("Paramètres Chemin")]
+    [Range(3, 6)] public int mainPathWidth = 5;
+    [Range(2, 4)] public int branchWidth = 3;
 
-    [ContextMenu("Generate V4.4 Absolute")]
+    private bool[,] isPath; // Grille invisible du chemin
+    private float[,] heightMap;
+
+    [ContextMenu("Generate V5 - Carver")]
     public void GenerateMap()
     {
         if (container == null || blockPrefab == null) return;
 
-        // ÉTAPE CRUCIALE : On réinitialise le container pour éviter la torsion
+        // Reset container
         container.localPosition = Vector3.zero;
-        container.localRotation = Quaternion.identity;
         container.localScale = Vector3.one;
+        foreach (Transform child in container) DestroyImmediate(child.gameObject);
 
-        heightMap = new int[size, size];
+        isPath = new bool[size, size];
+        heightMap = new float[size, size];
 
-        for (int x = 0; x < size; x++)
-            for (int z = 0; z < size; z++)
-                heightMap[x, z] = maxWallHeight;
+        // 1. Tracer le chemin invisible
+        CreateInvisiblePath();
 
-        GenerateAdvancedPathSystem();
-        ApplyGorgeLogic();
-        RenderMapAbsolute();
+        // 2. Calculer le terrain (vagues)
+        CalculateTerrain();
+
+        // 3. Rendu
+        RenderFinalMap();
     }
 
-    void GenerateAdvancedPathSystem()
+    [ContextMenu("Clear Map")] // Cette ligne crée l'option dans le clic droit
+    public void ClearMap()
     {
-        Vector2Int current = new Vector2Int(0, size / 2);
-        int currentH = 0;
-        while (current.x < size)
+        if (container == null)
         {
-            int rWidth = Random.Range(4, pathWidth + 1);
-            if (Random.value > 0.9f) currentH = Mathf.Clamp(currentH + Random.Range(-1, 2), 0, 1);
-            DigPath(current.x, current.y, rWidth, currentH);
-            current.x++;
-            if (Random.value > 0.7f) current.y += Random.Range(-1, 2);
-            current.y = Mathf.Clamp(current.y, 10, size - 10);
+            Debug.LogWarning("Le container est vide, rien à supprimer.");
+            return;
+        }
+
+        // On crée une liste temporaire pour éviter les erreurs de modification de collection pendant la boucle
+        List<GameObject> children = new List<GameObject>();
+        foreach (Transform child in container)
+        {
+            children.Add(child.gameObject);
+        }
+
+        // On supprime chaque objet
+        foreach (GameObject child in children)
+        {
+            DestroyImmediate(child);
+        }
+
+        Debug.Log("Map nettoyée avec succès !");
+    }
+
+    void CreateInvisiblePath()
+    {
+        // Chemin Principal (D'un bord à l'autre)
+        int curZ = size / 2;
+        for (int x = 0; x < size; x++)
+        {
+            MarkPathCircle(x, curZ, mainPathWidth);
+            if (Random.value > 0.7f) curZ += Random.Range(-1, 2);
+            curZ = Mathf.Clamp(curZ, 10, size - 10);
+
+            // Création d'une branche qui traverse aussi
+            if (x == size / 4 || x == size / 2)
+            {
+                CreateCrossingBranch(x, curZ);
+            }
         }
     }
 
-    void DigPath(int cx, int cz, int w, int h)
+    void CreateCrossingBranch(int startX, int startZ)
     {
-        int r = w / 2;
+        int curX = startX;
+        int curZ = startZ;
+        // La branche part vers le haut ou le bas jusqu'au bord
+        int direction = (Random.value > 0.5f) ? 1 : -1;
+
+        while (curZ > 0 && curZ < size - 1)
+        {
+            MarkPathCircle(curX, curZ, branchWidth);
+            curZ += direction;
+            if (Random.value > 0.8f) curX += Random.Range(-1, 2);
+            curX = Mathf.Clamp(curX, 5, size - 5);
+        }
+    }
+
+    void MarkPathCircle(int cx, int cz, int width)
+    {
+        int r = width / 2;
         for (int x = -r; x <= r; x++)
             for (int z = -r; z <= r; z++)
             {
                 int nx = cx + x; int nz = cz + z;
-                if (nx >= 0 && nx < size && nz >= 0 && nz < size) heightMap[nx, nz] = h;
+                if (nx >= 0 && nx < size && nz >= 0 && nz < size) isPath[nx, nz] = true;
             }
     }
 
-    void ApplyGorgeLogic()
+    void CalculateTerrain()
     {
         for (int x = 0; x < size; x++)
+        {
             for (int z = 0; z < size; z++)
-                if (heightMap[x, z] > 1)
-                {
-                    float dist = FindNearestPathDist(x, z);
-                    if (dist <= 1.5f) heightMap[x, z] = 0;
-                    else if (dist <= 4f) heightMap[x, z] = 3;
-                    else heightMap[x, z] = Mathf.Min(maxWallHeight, 3 + Mathf.FloorToInt(dist - 4) * 2);
-                }
-    }
-
-    float FindNearestPathDist(int x, int z)
-    {
-        float min = 20f;
-        for (int dx = -5; dx <= 5; dx++)
-            for (int dz = -5; dz <= 5; dz++)
             {
-                int nx = x + dx; int nz = z + dz;
-                if (nx >= 0 && nx < size && nz >= 0 && nz < size && heightMap[nx, nz] <= 1)
-                {
-                    float d = Vector2.Distance(new Vector2(x, z), new Vector2(nx, nz));
-                    if (d < min) min = d;
-                }
+                // Bruit de Perlin doux pour les "vagues" des murs
+                float wave = Mathf.PerlinNoise(x * 0.1f, z * 0.1f) * 4f + 2;
+                heightMap[x, z] = wave;
             }
-        return min;
+        }
     }
 
-    void RenderMapAbsolute()
+    void RenderFinalMap()
     {
-        // Nettoyage radical
-        List<GameObject> toDestroy = new List<GameObject>();
-        foreach (Transform child in container) toDestroy.Add(child.gameObject);
-        toDestroy.ForEach(child => DestroyImmediate(child));
-
-        // On utilise la taille du prefab pour forcer le placement
+        // On récupère la taille pour coller les blocs
         Vector3 s = Vector3.one;
         MeshRenderer mr = blockPrefab.GetComponentInChildren<MeshRenderer>();
         if (mr != null) s = mr.bounds.size;
@@ -111,26 +137,24 @@ public class MapGenerator : MonoBehaviour
         {
             for (int z = 0; z < size; z++)
             {
-                int h = heightMap[x, z];
-                float mNoise = Mathf.PerlinNoise(x * 0.12f, z * 0.12f);
-                Material[] fam = (mNoise > mossThreshold) ? mossMaterials : stoneMaterials;
+                // Hauteur : Si c'est le chemin, hauteur = 0 (juste le sol). Sinon, hauteur du terrain.
+                int h = isPath[x, z] ? 0 : Mathf.FloorToInt(heightMap[x, z]);
+
+                float mNoise = Mathf.PerlinNoise(x * 0.15f, z * 0.15f);
+                Material[] fam = (mNoise > 0.6f) ? mossMaterials : stoneMaterials;
 
                 for (int y = 0; y <= h; y++)
                 {
-                    // Placement forcé sur grille locale
                     GameObject b = Instantiate(blockPrefab, container);
                     b.transform.localPosition = new Vector3(x * s.x, y * s.y, z * s.z);
-                    b.transform.localRotation = Quaternion.identity;
 
                     Renderer r = b.GetComponentInChildren<Renderer>();
-                    if (r != null && fam.Length >= 3)
-                    {
-                        if (y == 0) r.material = fam[0];
-                        else if (y == h) r.material = fam[2];
-                        else r.material = fam[1];
-                    }
+                    if (y == 0) r.material = fam[0];
+                    else if (y == h) r.material = fam[2];
+                    else r.material = fam[1];
                 }
             }
         }
+        Debug.Log("Map V5 Terminée : Chemin plat et murs en vagues !");
     }
 }
