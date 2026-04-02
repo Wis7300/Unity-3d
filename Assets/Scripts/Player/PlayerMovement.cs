@@ -2,7 +2,6 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    [Header("Movement Settings")]
     public float speed = 5f;
     private Rigidbody rb;
 
@@ -21,7 +20,7 @@ public class PlayerMovement : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        
+
         rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
@@ -29,28 +28,22 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        // --- DÉTECTION DES TOUCHES (AZERTY) ---
-        float moveX = 0;
-        float moveZ = 0;
-
-        moveZ = Input.GetAxis("Vertical");
-        moveX = Input.GetAxis("Horizontal");
-        
+        // INPUT
+        float moveZ = Input.GetAxis("Vertical");
+        float moveX = Input.GetAxis("Horizontal");
 
         Vector3 inputDirection = new Vector3(moveX, 0, moveZ).normalized;
 
-        // --- GESTION DU DASH ---
+        // DASH
         if (Input.GetKeyDown(KeyCode.Space) && cooldownTimer <= 0)
         {
             isDashing = true;
             dashTimer = dashDuration;
             cooldownTimer = dashCooldown;
-            // Si on ne bouge pas, on dashe vers l'avant de l'objet
             dashDirection = inputDirection.magnitude > 0 ? inputDirection : transform.forward;
         }
 
-        if (cooldownTimer > 0) 
-            cooldownTimer -= Time.deltaTime;
+        if (cooldownTimer > 0) cooldownTimer -= Time.deltaTime;
 
         Vector3 velocity;
 
@@ -67,18 +60,10 @@ public class PlayerMovement : MonoBehaviour
             velocity = inputDirection * speed;
         }
 
-        // 👉 IMPORTANT : on stocke juste
         currentVelocity = velocity;
-
-
-
-        // OPTIONNEL : Faire pivoter le personnage vers la direction de marche
-        if (inputDirection != Vector3.zero && !isDashing)
-        {
-            transform.forward = Vector3.Slerp(transform.forward, inputDirection, Time.deltaTime * 10f);
-        }
     }
-    private void FixedUpdate()
+
+    void FixedUpdate()
     {
         rb.linearVelocity = currentVelocity;
     }
