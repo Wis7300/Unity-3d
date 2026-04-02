@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class PlayerMovement : MonoBehaviour
 {
-    public float speed = 5f;
+    public float speed = 7f;
     private Rigidbody rb;
 
     [Header("Dash Settings")]
@@ -10,27 +10,29 @@ public class PlayerMovement : MonoBehaviour
     public float dashDuration = 0.2f;
     public float dashCooldown = 1f;
 
+    [Header("Physique Custom")]
+    public float gravityScale = 5f; // Augmente ça pour tomber plus vite !
+
     private float dashTimer;
     private float cooldownTimer;
     private Vector3 dashDirection;
     private bool isDashing;
-
     private Vector3 currentVelocity;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-
-        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        // Bloque les rotations pour ne pas que le cube tombe
+        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
-        rb.interpolation = RigidbodyInterpolation.Interpolate;
+        rb.useGravity = true; // On laisse Unity gérer la base
     }
 
     void Update()
     {
-        // INPUT
-        float moveZ = Input.GetAxis("Vertical");
-        float moveX = Input.GetAxis("Horizontal");
+        // GetAxisRaw = Arrêt INSTANTANÉ (pas de lissage)
+        float moveZ = Input.GetAxisRaw("Vertical");
+        float moveX = Input.GetAxisRaw("Horizontal");
 
         Vector3 inputDirection = new Vector3(moveX, 0, moveZ).normalized;
 
@@ -45,26 +47,24 @@ public class PlayerMovement : MonoBehaviour
 
         if (cooldownTimer > 0) cooldownTimer -= Time.deltaTime;
 
-        Vector3 velocity;
-
         if (isDashing && dashTimer > 0)
         {
-            velocity = dashDirection * dashForce;
+            currentVelocity = dashDirection * dashForce;
             dashTimer -= Time.deltaTime;
-
-            if (dashTimer <= 0)
-                isDashing = false;
+            if (dashTimer <= 0) isDashing = false;
         }
         else
         {
-            velocity = inputDirection * speed;
+            currentVelocity = inputDirection * speed;
         }
-
-        currentVelocity = velocity;
     }
 
     void FixedUpdate()
     {
-        rb.linearVelocity = currentVelocity;
+        // On applique une gravité bonus pour ne pas flotter
+        rb.AddForce(Vector3.down * gravityScale, ForceMode.Acceleration);
+
+        // On applique le mouvement X Z tout en gardant la vélocité Y du Rigidbody
+        rb.linearVelocity = new Vector3(currentVelocity.x, rb.linearVelocity.y, currentVelocity.z);
     }
 }
