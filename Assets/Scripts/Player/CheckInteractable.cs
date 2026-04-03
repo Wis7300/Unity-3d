@@ -3,17 +3,21 @@ using UnityEngine;
 public class CheckInteractable : MonoBehaviour
 {
     public float range = 2;
-    public 
+    public LayerMask interactableLayer;
 
     // Update is called once per frame
     void Update()
     {
-        RaycastHit hit;
-        if (Physics.Raycast(transform.position, transform.forward, out hit, range))
+        Collider[] hits = Physics.OverlapSphere(transform.position, 2f, interactableLayer);
+
+        foreach (Collider col in hits)
         {
-            Debug.Log("Touché");
+            Debug.Log("Objet proche : " + col.name);
         }
-        Debug.DrawRay(transform.position, transform.forward * range, Color.red, 2.0f);
-        Debug.DrawRay(Vector3.zero, Vector3.forward * 5f, Color.red);
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        Debug.Log("Objet proche :" + other.name);
     }
 }
