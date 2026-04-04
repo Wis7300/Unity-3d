@@ -1,7 +1,13 @@
 fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/Blox/Materials/Rock_stone_3.mat.meta
+guid: 1dd9ab36171141440880191cd356fa18
+NativeFormatImporter:
+========
 guid: e43a46c753e93a3408644eb22b34a704
 DefaultImporter:
+>>>>>>>> e17852adfb793d13ac7d4fdcc91646c72e7ec891:Assets/Scenes/Floor1.unity.meta
   externalObjects: {}
+  mainObjectFileID: 2100000
   userData: 
   assetBundleName: 
   assetBundleVariant: 

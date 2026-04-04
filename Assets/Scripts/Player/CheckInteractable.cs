@@ -5,19 +5,35 @@ public class CheckInteractable : MonoBehaviour
     public float range = 2;
     public LayerMask interactableLayer;
 
-    // Update is called once per frame
+    // On stocke directement l'interface, pas le GameObject
+    IInteractable currentInteractable;
+
     void Update()
     {
-        Collider[] hits = Physics.OverlapSphere(transform.position, 2f, interactableLayer);
+        Collider[] hits = Physics.OverlapSphere(transform.position, range, interactableLayer);
 
-        foreach (Collider col in hits)
+        IInteractable closest = null;
+        float minDistance = range;
+
+        foreach (Collider hit in hits)
         {
-            Debug.Log("Objet proche : " + col.name);
-        }
-    }
+            IInteractable interactable = hit.GetComponent<IInteractable>();
 
-    private void OnTriggerEnter(Collider other)
-    {
-        Debug.Log("Objet proche :" + other.name);
+            if (interactable != null)
+            {
+                float distance = Vector3.Distance(transform.position, hit.transform.position);
+                if (distance < minDistance)
+                {
+                    minDistance = distance;
+                    closest = interactable;
+                }
+            }
+        }
+        currentInteractable = closest;
+
+        if (currentInteractable != null && Input.GetKeyDown(KeyCode.E))
+        {
+            currentInteractable.Interact();
+        }
     }
 }

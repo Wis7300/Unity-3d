@@ -1,0 +1,11 @@
+fileFormatVersion: 2
+<<<<<<<< HEAD:Assets/Prefabs/BaseBlock.prefab.meta
+guid: 2cce057fdebbd5b4188a5e7e60982330
+========
+guid: 2d02505ae5bf6dc4ca319dc8302b68ca
+>>>>>>>> e17852adfb793d13ac7d4fdcc91646c72e7ec891:Assets/Prefabs/Environment/Ground/BigGround.prefab.meta
+PrefabImporter:
+  externalObjects: {}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
