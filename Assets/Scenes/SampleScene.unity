@@ -200,7 +200,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 8ce9eca89ccfc324eb7538390635ba5a, type: 2}
+  - {fileID: 2100000, guid: 6b4a75a0d0bb03c4a8f2181a563fd099, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -665,7 +665,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 8ce9eca89ccfc324eb7538390635ba5a, type: 2}
+  - {fileID: 2100000, guid: 6b4a75a0d0bb03c4a8f2181a563fd099, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1298,6 +1298,22 @@ PrefabInstance:
     - target: {fileID: 6671551168377887463, guid: 89516b0c9e9779e4e91c8d966c817c2d, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8145618245045537268, guid: 89516b0c9e9779e4e91c8d966c817c2d, type: 3}
+      propertyPath: m_Color.b
+      value: 0.8301887
+      objectReference: {fileID: 0}
+    - target: {fileID: 8145618245045537268, guid: 89516b0c9e9779e4e91c8d966c817c2d, type: 3}
+      propertyPath: m_Color.g
+      value: 0.7654146
+      objectReference: {fileID: 0}
+    - target: {fileID: 8145618245045537268, guid: 89516b0c9e9779e4e91c8d966c817c2d, type: 3}
+      propertyPath: m_Color.r
+      value: 0.36418653
+      objectReference: {fileID: 0}
+    - target: {fileID: 8145618245045537268, guid: 89516b0c9e9779e4e91c8d966c817c2d, type: 3}
+      propertyPath: m_Intensity
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
