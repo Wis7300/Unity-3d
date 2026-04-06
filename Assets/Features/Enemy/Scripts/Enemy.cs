@@ -4,6 +4,7 @@ public class Enemy : MonoBehaviour
 {
     public EnemyData data;
     public GameObject player;
+    public LootTableData lootTable;
 
     private int currentHP;
     private float currentCooldown;
@@ -70,6 +71,19 @@ public class Enemy : MonoBehaviour
     void Die()
     {
         Debug.Log(name + " is dead");
+        DropLoot();
         Destroy(gameObject);
+    }
+
+    void DropLoot()
+    {
+        for (int i = 0; i < lootTable.items.Length; i++)
+        {
+            if (Random.value <= lootTable.dropChance[i])
+            {
+                Instantiate(lootTable.items[i].prefab, transform.position, Quaternion.identity);
+                Debug.Log(lootTable.items[i].itemName + " dropped!");
+            }
+        }
     }
 }
