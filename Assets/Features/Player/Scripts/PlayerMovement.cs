@@ -5,6 +5,7 @@ public class PlayerMovement : MonoBehaviour
     public float speed = 7f;
     private Rigidbody rb;
     private Camera cam;
+    private Animator anim; // Référence pour l'animation
 
     [Header("Dash Settings")]
     public float dashForce = 20f;
@@ -13,6 +14,9 @@ public class PlayerMovement : MonoBehaviour
 
     [Header("Physique Custom")]
     public float gravityScale = 5f;
+
+    [Header("Smooth Settings")]
+    public float rotationSpeed = 10f; // Vitesse de rotation (plus c'est haut, plus c'est réactif)
 
     private float dashTimer;
     private float cooldownTimer;
@@ -23,32 +27,37 @@ public class PlayerMovement : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody>();
-        cam = Camera.main; // On stocke la caméra pour éviter de la chercher à chaque frame
+        cam = Camera.main;
+        anim = GetComponent<Animator>(); // On récupère l'Animator au lancement
 
-
-        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY | RigidbodyConstraints.FreezeRotationZ;
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
         rb.useGravity = true;
     }
 
     void Update()
     {
-        // Inputs (Z, Q, S, D ou flèches)
         float moveZ = Input.GetAxisRaw("Vertical");
         float moveX = Input.GetAxisRaw("Horizontal");
 
-        // --- CALCUL DE LA DIRECTION RELATIVE À LA CAMÉRA ---
         Vector3 forward = cam.transform.forward;
         Vector3 right = cam.transform.right;
 
-        // On ignore la hauteur de la caméra pour rester au sol
         forward.y = 0;
         right.y = 0;
         forward = forward.normalized;
         right = right.normalized;
 
-        // Direction finale basée sur ce qu'on voit à l'écran
         Vector3 inputDirection = (forward * moveZ + right * moveX).normalized;
+
+        // --- GESTION DE L'ANIMATION ---
+        if (anim != null)
+        {
+            // On vérifie si le joueur donne un input de mouvement
+            bool isMoving = inputDirection.magnitude > 0.1f;
+            // On envoie l'info à l'Animator (assure-toi d'avoir un paramètre bool nommé "isWalking")
+            anim.SetBool("isWalking", isMoving);
+        }
 
         // --- LOGIQUE DU DASH ---
         if (Input.GetKeyDown(KeyCode.Space) && cooldownTimer <= 0)
@@ -56,8 +65,6 @@ public class PlayerMovement : MonoBehaviour
             isDashing = true;
             dashTimer = dashDuration;
             cooldownTimer = dashCooldown;
-
-            // Si on ne bouge pas, on dash vers l'avant du personnage, sinon vers l'input
             dashDirection = inputDirection.magnitude > 0 ? inputDirection : transform.forward;
         }
 
@@ -74,21 +81,19 @@ public class PlayerMovement : MonoBehaviour
             currentVelocity = inputDirection * speed;
         }
 
-        // --- ROTATION DU PERSONNAGE (Optionnel mais recommandé) ---
-        // Oriente le cube vers la direction du mouvement
+        // --- ROTATION SMOOTH ---
         if (inputDirection.magnitude > 0 && !isDashing)
         {
-            transform.forward = inputDirection;
+            // Calcule la rotation cible vers laquelle on veut regarder
+            Quaternion targetRotation = Quaternion.LookRotation(inputDirection);
+            // On tourne progressivement vers cette cible
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
         }
     }
 
     void FixedUpdate()
     {
-        // Gravité personnalisée
         rb.AddForce(Vector3.down * gravityScale, ForceMode.Acceleration);
-
-        // Application du mouvement
-        // On garde la vélocité Y actuelle (chute) et on applique X/Z
         rb.linearVelocity = new Vector3(currentVelocity.x, rb.linearVelocity.y, currentVelocity.z);
     }
 }
