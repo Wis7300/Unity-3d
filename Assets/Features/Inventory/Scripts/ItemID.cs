@@ -2,5 +2,7 @@ public enum ItemID
 {
     Coin,
     Potion,
-    IronSword
-}
+    IronSword,
+    Gold,
+    Bone
+};

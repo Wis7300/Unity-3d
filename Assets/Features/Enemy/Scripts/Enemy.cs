@@ -81,8 +81,14 @@ public class Enemy : MonoBehaviour
         {
             if (Random.value <= lootTable.dropChance[i])
             {
-                Instantiate(lootTable.items[i].prefab, transform.position, Quaternion.identity);
+                GameObject obj = Instantiate(lootTable.items[i].prefab, transform.position, Quaternion.identity);
                 Debug.Log(lootTable.items[i].itemName + " dropped!");
+                /** ItemWorld itemWorld = obj.GetComponent<ItemWorld>();
+                if (itemWorld != null)
+                {
+                    itemWorld.itemData = lootTable.items[i];
+                }
+                **/
             }
         }
     }

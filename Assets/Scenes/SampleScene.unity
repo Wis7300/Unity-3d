@@ -550,6 +550,34 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f9055c74faac0ef41b8079442bae24ea, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStats
+--- !u!114 &827496742 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7673326011779282724, guid: 89516b0c9e9779e4e91c8d966c817c2d, type: 3}
+  m_PrefabInstance: {fileID: 4143185711730547303}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 827496731}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 463d385c3538a2848b29c4ce331510e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InventoryManager
+--- !u!114 &827496749
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 827496731}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 42470a7affcbf2745b5079a6513b1357, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PickUpItem
+  itemLayer:
+    serializedVersion: 2
+    m_Bits: 2048
+  inventoryManager: {fileID: 827496742}
+  range: 2
 --- !u!1 &832575517
 GameObject:
   m_ObjectHideFlags: 0
@@ -1306,6 +1334,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 3904237439853995521, guid: 89516b0c9e9779e4e91c8d966c817c2d, type: 3}
       insertIndex: -1
       addedObject: {fileID: 827496740}
+    - targetCorrespondingSourceObject: {fileID: 3904237439853995521, guid: 89516b0c9e9779e4e91c8d966c817c2d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 827496749}
   m_SourcePrefab: {fileID: 100100000, guid: 89516b0c9e9779e4e91c8d966c817c2d, type: 3}
 --- !u!1 &4395391642190451313
 GameObject:

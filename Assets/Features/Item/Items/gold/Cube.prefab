@@ -13,7 +13,8 @@ GameObject:
   - component: {fileID: 4329641032620425988}
   - component: {fileID: 8965269936710265395}
   - component: {fileID: 8561402667957983328}
-  m_Layer: 0
+  - component: {fileID: -8421001796149000826}
+  m_Layer: 11
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -140,3 +141,16 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &-8421001796149000826
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1793991721112155998}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc5611d5c67447b4bb27986bb3b96c3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ItemWorld
+  itemData: {fileID: 11400000, guid: 751082c6f57034d4ea70e6103f667779, type: 2}
