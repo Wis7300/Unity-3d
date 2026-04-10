@@ -44,6 +44,7 @@ public class GameManager : MonoBehaviour
         currentState = GameState.Playing;
         string floorName = $"Floor{currentFloor}";
         SceneManager.LoadScene(floorName);
+        Debug.Log("NEXT fLOOR !!!");
     }
 
     public void SetGameState(GameState newState)
