@@ -42,7 +42,7 @@ public class GameManager : MonoBehaviour
         currentFloor++;
         currentBiome = GetCurrentBiome();
         currentState = GameState.Playing;
-        string floorName = $"Floor{CurrentFloor}";
+        string floorName = $"Floor{currentFloor}";
         SceneManager.LoadScene(floorName);
     }
 
