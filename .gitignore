@@ -6,6 +6,7 @@
 [Bb]uilds/
 [Ll]ogs/
 [MemoryCaptures]/
+[Uu]serSettings/
 
 # --- Fichiers de solution Visual Studio / Rider ---
 *.csproj
