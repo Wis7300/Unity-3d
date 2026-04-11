@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using TMPro;
 
 public class InventoryUI : MonoBehaviour
 {
@@ -16,7 +17,7 @@ public class InventoryUI : MonoBehaviour
     {
         if (refreshDelay > 0)
         {
-            refreshDelay -= Time.deltaTime;
+            refreshDelay -= Time.unscaledDeltaTime;
         }
         if (refreshDelay <= 0)
         {
@@ -31,9 +32,16 @@ public class InventoryUI : MonoBehaviour
         for (int i = 1; i < slots.Length; i++)
         {
             if (i - 1 < itemList.Count)
+            {
                 slots[i].color = Color.gray;
+                TextMeshProUGUI textSlot = slots[i].GetComponentInChildren<TextMeshProUGUI>();
+                textSlot.text = GameManager.instance.PlayerInventory.GetQuantity(itemList[i - 1]).ToString();
+
+            }   
             else
+            {
                 slots[i].color = Color.white;
+            }
         }
     }
 }

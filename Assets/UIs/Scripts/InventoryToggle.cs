@@ -9,6 +9,7 @@ public class InventoryToggle : MonoBehaviour
     {
         inventoryGrid.SetActive(false);
         inventoryTitle.SetActive(false);
+        Time.timeScale = 1;
     }
     void Update()
     {
@@ -16,6 +17,14 @@ public class InventoryToggle : MonoBehaviour
         {
             inventoryGrid.SetActive(!inventoryGrid.activeSelf);
             inventoryTitle.SetActive(!inventoryTitle.activeSelf);
+            if (Time.timeScale == 1)
+            {
+                Time.timeScale = 0;
+            }
+            else
+            {
+                Time.timeScale = 1;
+            }
         }
     }
 }
