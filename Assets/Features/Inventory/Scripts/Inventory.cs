@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Diagnostics;
 
 public class Inventory
 {
@@ -26,5 +25,10 @@ public class Inventory
     public int GetQuantity(ItemID id)
     {
         return items.ContainsKey(id) ? items[id] : 0;
+    }
+    
+    public Dictionary<ItemID, int> GetItems()
+    {
+        return items;
     }
 }

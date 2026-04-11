@@ -6,13 +6,9 @@ public class InventoryManager : MonoBehaviour
 
     void Start()
     {
-        playerInventory = new Inventory();
+        playerInventory = GameManager.instance.PlayerInventory;
+
         playerInventory.AddItem(ItemID.IronSword);
-
-        int qty = playerInventory.GetQuantity(ItemID.IronSword);
-        Debug.Log("Iron Sword quantity: " + qty);
-
-        Item swordData = ItemDatabase.items[ItemID.IronSword];
-        Debug.Log("Iron Sword damage: " + swordData.damage);
+        Debug.Log("sword added to inventory");
     }
 }

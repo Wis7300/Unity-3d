@@ -10,9 +10,12 @@ public class GameManager : MonoBehaviour
     private int currentBiome;
     private GameState currentState;
 
+    private Inventory playerInventory;
+
     public int CurrentFloor => currentFloor;
     public int CurrentBiome => currentBiome;
     public GameState CurrentState => currentState;
+    public Inventory PlayerInventory => playerInventory;
 
 
     void Awake()
@@ -30,6 +33,7 @@ public class GameManager : MonoBehaviour
         currentBiome = GetCurrentBiome();
         DontDestroyOnLoad(gameObject);
         currentState = GameState.Playing;
+        playerInventory = new Inventory();
     }
 
     private int GetCurrentBiome()
