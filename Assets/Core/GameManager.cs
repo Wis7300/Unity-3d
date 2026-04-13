@@ -36,6 +36,11 @@ public class GameManager : MonoBehaviour
         playerInventory = new Inventory();
     }
 
+    private void Start()
+    {
+        Time.timeScale = 0;
+    }
+
     private int GetCurrentBiome()
     {
         return currentFloor / 10;

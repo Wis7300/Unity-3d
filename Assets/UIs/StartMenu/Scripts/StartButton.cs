@@ -6,6 +6,7 @@ public class StartButton : MonoBehaviour
     public void Play()
     {
         SceneManager.LoadScene("Floor1");
+        Time.timeScale = 1;
     }
 
     public void Credit()
