@@ -58,7 +58,7 @@ public class Enemy : MonoBehaviour
 
     public void TakeDamage(int amount)
     {
-        currentHP -= amount;
+        currentHP -= (amount - data.defense);
         Debug.Log(name + " took " + amount + " damage");
         Debug.Log(name + " has " + currentHP + " HP left");
 
@@ -83,12 +83,7 @@ public class Enemy : MonoBehaviour
             {
                 GameObject obj = Instantiate(lootTable.items[i].prefab, transform.position, Quaternion.identity);
                 Debug.Log(lootTable.items[i].itemName + " dropped!");
-                /** ItemWorld itemWorld = obj.GetComponent<ItemWorld>();
-                if (itemWorld != null)
-                {
-                    itemWorld.itemData = lootTable.items[i];
-                }
-                **/
+                
             }
         }
     }
