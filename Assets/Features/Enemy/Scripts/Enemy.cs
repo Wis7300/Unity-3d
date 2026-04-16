@@ -72,6 +72,7 @@ public class Enemy : MonoBehaviour
     {
         Debug.Log(name + " is dead");
         DropLoot();
+        playerStats.AddXP(data.xpDropped);
         Destroy(gameObject);
     }
 

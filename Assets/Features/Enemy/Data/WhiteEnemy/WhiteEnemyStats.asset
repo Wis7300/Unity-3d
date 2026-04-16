@@ -19,3 +19,4 @@ MonoBehaviour:
   attackRange: 2
   detectionRange: 5
   attackCooldown: 0.5
+  xpDropped: 10
