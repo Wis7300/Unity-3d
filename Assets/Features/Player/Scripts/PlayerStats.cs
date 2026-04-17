@@ -3,6 +3,8 @@ using UnityEngine;
 public class PlayerStats : MonoBehaviour
 {
     public PlayerStatsData statsData;
+    private PlayerSaveData saveData;
+
     public int maxHealth;
     public int currentHealth;
     public float attackDamageFloat;
@@ -13,19 +15,46 @@ public class PlayerStats : MonoBehaviour
 
     void Start()
     {
-        maxHealth = statsData.maxHealth;
-        currentHealth = statsData.maxHealth;
-        attackDamage = statsData.damage;
-        attackDamageFloat = statsData.damage;
-        level = statsData.level;
-        xp = statsData.xp;
-        xpRequired = 10;
+        saveData = GameManager.instance.PlayerSaveData;
+
+        if (saveData.level > 0)
+        {
+            maxHealth = saveData.maxHealth;
+            currentHealth = saveData.currentHealth;
+            attackDamage = saveData.attackDamage;
+            attackDamageFloat = saveData.attackDamageFloat;
+            level = saveData.level;
+            xp = saveData.xp;
+            xpRequired = saveData.xpRequired;
+        }
+        else
+        {
+            maxHealth = statsData.maxHealth;
+            currentHealth = statsData.maxHealth;
+            attackDamage = statsData.damage;
+            attackDamageFloat = statsData.damage;
+            level = statsData.level;
+            xp = statsData.xp;
+            xpRequired = 10;
+        }
+    }
+
+    private void SaveStats()
+    {
+        saveData.maxHealth = maxHealth;
+        saveData.currentHealth = currentHealth;
+        saveData.attackDamage = attackDamage;
+        saveData.attackDamageFloat = attackDamageFloat;
+        saveData.level = level;
+        saveData.xp = xp;
+        saveData.xpRequired = xpRequired;
     }
 
     public void TakeDamage(int damage)
     {
         currentHealth -= damage;
-        currentHealth = Mathf.Max(currentHealth, 0); 
+        currentHealth = Mathf.Max(currentHealth, 0);
+        saveData.currentHealth = currentHealth;
         Debug.Log("Player HP: " + currentHealth);
 
         if (currentHealth <= 0)
@@ -45,10 +74,11 @@ public class PlayerStats : MonoBehaviour
             LevelUp();
         }
     }
+
     void LevelUp()
     {
         while (xpRequired <= xp)
-        {   
+        {
             xp = xp - xpRequired;
             xpRequired = Mathf.RoundToInt(xpRequired * statsData.xpMult);
             level += 1;
@@ -61,5 +91,6 @@ public class PlayerStats : MonoBehaviour
 
             Debug.Log("Le joueur est monté au niveau " + level);
         }
+        SaveStats();
     }
 }
