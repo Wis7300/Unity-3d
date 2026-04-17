@@ -5,19 +5,21 @@ public class PlayerStats : MonoBehaviour
     public PlayerStatsData statsData;
     public int maxHealth;
     public int currentHealth;
+    public float attackDamageFloat;
     public int attackDamage;
     public int level;
     public int xp;
-    private int[] levelList;
+    private int xpRequired;
 
     void Start()
     {
         maxHealth = statsData.maxHealth;
         currentHealth = statsData.maxHealth;
         attackDamage = statsData.damage;
+        attackDamageFloat = statsData.damage;
         level = statsData.level;
         xp = statsData.xp;
-        levelList = new int[] {10, 15, 20, 25, 30, 35, 40 };
+        xpRequired = 10;
     }
 
     public void TakeDamage(int damage)
@@ -45,13 +47,15 @@ public class PlayerStats : MonoBehaviour
     }
     void LevelUp()
     {
-        while (levelList[level] <= xp)
+        while (xpRequired <= xp)
         {   
-            xp = xp - levelList[level];
+            xp = xp - xpRequired;
+            xpRequired = Mathf.RoundToInt(xpRequired * statsData.xpMult);
             level += 1;
 
-            maxHealth = Mathf.RoundToInt(maxHealth * 1.05f);
-            attackDamage = Mathf.RoundToInt(attackDamage * 1.05f);
+            maxHealth = Mathf.RoundToInt(maxHealth * statsData.healthMult);
+            attackDamageFloat *= statsData.damageMult;
+            attackDamage = Mathf.RoundToInt(attackDamageFloat);
 
             currentHealth = maxHealth;
 

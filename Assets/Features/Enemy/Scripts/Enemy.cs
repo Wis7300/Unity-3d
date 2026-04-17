@@ -3,7 +3,6 @@ using UnityEngine;
 public class Enemy : MonoBehaviour
 {
     public EnemyData data;
-    public GameObject player;
     public LootTableData lootTable;
 
     private int currentHP;
@@ -11,6 +10,7 @@ public class Enemy : MonoBehaviour
     private Rigidbody rb;
 
     private PlayerStats playerStats;
+    private GameObject player;
 
     void Start()
     {
@@ -20,7 +20,7 @@ public class Enemy : MonoBehaviour
         rb.constraints = RigidbodyConstraints.FreezeRotation;
 
         
-        GameObject player = GameObject.FindWithTag("Player");
+        player = GameObject.FindWithTag("Player");
 
         if (player != null)
         {
