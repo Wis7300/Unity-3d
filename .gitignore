@@ -23,6 +23,7 @@
 *.mdb
 *.opendb
 *.VC.db
+*.slnx
 
 # --- Fichiers système ---
 .DS_Store
