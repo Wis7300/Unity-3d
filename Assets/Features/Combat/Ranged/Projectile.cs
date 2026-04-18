@@ -5,7 +5,12 @@ public class Projectile : MonoBehaviour
     public int damage;
     public int speed;
     public Vector3 movementDirection;
-        
+    
+    void Start()
+    {
+        Physics.IgnoreCollision(GetComponent<Collider>(), GameObject.FindWithTag("Player").GetComponent<Collider>());
+    }
+
     void Update()
     {
         transform.Translate(movementDirection * speed * Time.deltaTime);

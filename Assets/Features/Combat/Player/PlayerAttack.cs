@@ -31,7 +31,8 @@ public class PlayerAttack : MonoBehaviour
             if (Physics.Raycast(ray, out RaycastHit hit))
             {
                 Vector3 direction = (hit.point - transform.position).normalized;
-                GameObject arrow = Instantiate(arrowPrefab, transform.position, Quaternion.identity);
+                Vector3 spawnPosition = new Vector3(transform.position.x, transform.position.y + 2, transform.position.z);
+                GameObject arrow = Instantiate(arrowPrefab, spawnPosition, Quaternion.identity);
                 arrow.GetComponent<Projectile>().movementDirection = direction;
             }
         }
