@@ -1,5 +1,6 @@
 public class PlayerSaveData
 {
+    // Stats de base
     public int maxHealth;
     public int currentHealth;
     public int attackDamage;
@@ -8,5 +9,9 @@ public class PlayerSaveData
     public int xp;
     public int xpRequired;
 
+    // Stats spéciales
+    public int toxicity;
+    public int freeze;
+    public int warm;
 
 }

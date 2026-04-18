@@ -5,6 +5,7 @@ public class PlayerStats : MonoBehaviour
     public PlayerStatsData statsData;
     private PlayerSaveData saveData;
 
+    // Stats "normales"
     public int maxHealth;
     public int currentHealth;
     public float attackDamageFloat;
@@ -12,6 +13,12 @@ public class PlayerStats : MonoBehaviour
     public int level;
     public int xp;
     private int xpRequired;
+
+    // Stats Spéciales (elles ont un ptt truc en plus mdr)
+    public int toxicity;
+    public int freeze;
+    public int warm;
+
 
     void Start()
     {
@@ -26,6 +33,11 @@ public class PlayerStats : MonoBehaviour
             level = saveData.level;
             xp = saveData.xp;
             xpRequired = saveData.xpRequired;
+
+            toxicity = saveData.toxicity;
+            freeze = saveData.freeze;
+            warm = saveData.warm;
+
         }
         else
         {
@@ -36,6 +48,10 @@ public class PlayerStats : MonoBehaviour
             level = statsData.level;
             xp = statsData.xp;
             xpRequired = 10;
+
+            toxicity = 0;
+            freeze = 0;
+            warm = 0;
         }
     }
 
@@ -48,6 +64,10 @@ public class PlayerStats : MonoBehaviour
         saveData.level = level;
         saveData.xp = xp;
         saveData.xpRequired = xpRequired;
+
+        saveData.toxicity = toxicity;
+        saveData.freeze = freeze;
+        saveData.warm = warm;
     }
 
     public void TakeDamage(int damage)
