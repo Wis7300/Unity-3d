@@ -14,6 +14,7 @@ public class Projectile : MonoBehaviour
         {
             Physics.IgnoreCollision(col, playerCollider);
         }
+        transform.forward = movementDirection;
     }
 
     void Update()

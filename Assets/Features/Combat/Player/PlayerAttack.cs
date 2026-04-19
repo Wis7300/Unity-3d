@@ -10,7 +10,6 @@ public class PlayerAttack : MonoBehaviour
 
     // Attaque à l'arc
     public GameObject arrowPrefab;
-    public LayerMask groundLayer;
 
     
 
@@ -37,7 +36,6 @@ public class PlayerAttack : MonoBehaviour
                 Vector3 spawnPosition = new Vector3(transform.position.x, transform.position.y + 2, transform.position.z);
                 GameObject arrow = Instantiate(arrowPrefab, spawnPosition, Quaternion.identity);
                 arrow.GetComponent<Projectile>().movementDirection = direction;
-                Debug.Log(hit.point);
             }
             else
             {
