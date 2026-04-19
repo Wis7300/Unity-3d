@@ -8,12 +8,17 @@ public class Projectile : MonoBehaviour
     
     void Start()
     {
-        Physics.IgnoreCollision(GetComponent<Collider>(), GameObject.FindWithTag("Player").GetComponent<Collider>());
+        Physics.IgnoreCollision(GetComponent<Collider>(), GameObject.FindWithTag("Player").GetComponent<Collider>(), true);
+        Collider playerCollider = GameObject.FindWithTag("Player").GetComponent<Collider>();
+        foreach (Collider col in GetComponentsInChildren<Collider>())
+        {
+            Physics.IgnoreCollision(col, playerCollider);
+        }
     }
 
     void Update()
     {
-        transform.Translate(movementDirection * speed * Time.deltaTime);
+        transform.Translate(movementDirection * speed * Time.deltaTime, Space.World);
     }
 
     void OnTriggerEnter(Collider other)

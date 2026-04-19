@@ -1850,6 +1850,10 @@ PrefabInstance:
       propertyPath: arrowPrefab
       value: 
       objectReference: {fileID: 154417494235057780, guid: ee3c38db57a0d2940bff757ff3f7bc10, type: 3}
+    - target: {fileID: 908464005291133681, guid: b8dd9bf50d9f4bc40ab949f5cebfe6af, type: 3}
+      propertyPath: groundLayer.m_Bits
+      value: 256
+      objectReference: {fileID: 0}
     - target: {fileID: 2631395487416479984, guid: b8dd9bf50d9f4bc40ab949f5cebfe6af, type: 3}
       propertyPath: m_LocalPosition.x
       value: 26.1

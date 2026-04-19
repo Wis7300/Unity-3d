@@ -10,6 +10,7 @@ public class PlayerAttack : MonoBehaviour
 
     // Attaque à l'arc
     public GameObject arrowPrefab;
+    public LayerMask groundLayer;
 
     
 
@@ -28,12 +29,20 @@ public class PlayerAttack : MonoBehaviour
         else if (Input.GetMouseButtonDown(1))
         {
             Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-            if (Physics.Raycast(ray, out RaycastHit hit))
+            if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, ~0))
             {
                 Vector3 direction = (hit.point - transform.position).normalized;
+                direction.y = 0;
+                direction = direction.normalized;
                 Vector3 spawnPosition = new Vector3(transform.position.x, transform.position.y + 2, transform.position.z);
                 GameObject arrow = Instantiate(arrowPrefab, spawnPosition, Quaternion.identity);
                 arrow.GetComponent<Projectile>().movementDirection = direction;
+                Debug.Log(hit.point);
+            }
+            else
+            {
+                Debug.Log("No Raycast");
+                Debug.Log("Ray origin: " + ray.origin + " direction: " + ray.direction);
             }
         }
     }
