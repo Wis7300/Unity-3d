@@ -55,6 +55,8 @@ We are still fairly new to Unity and game development, but this project is helpi
 
 This is an early development project. Many systems are prototypes and subject to change.
 
+We are French, which is why all the commit messages are in French.
+
 ---
 
 ## Credits
