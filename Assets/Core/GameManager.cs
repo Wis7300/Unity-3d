@@ -5,6 +5,7 @@ public class GameManager : MonoBehaviour
 {
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     public static GameManager instance;
+    [SerializeField] private ItemDatabase itemDatabase;
 
     private int currentFloor;
     private int currentBiome;
@@ -18,6 +19,8 @@ public class GameManager : MonoBehaviour
     public int CurrentBiome => currentBiome;
     public GameState CurrentState => currentState;
     public Inventory PlayerInventory => playerInventory;
+
+    
 
 
     void Awake()
@@ -36,7 +39,7 @@ public class GameManager : MonoBehaviour
         currentBiome = GetCurrentBiome();
         DontDestroyOnLoad(gameObject);
         currentState = GameState.Playing;
-        playerInventory = new Inventory();
+        playerInventory = new Inventory(itemDatabase);
     }
 
     private void Start()

@@ -4,7 +4,6 @@ using UnityEngine;
 public class PickUpItem : MonoBehaviour
 {
     public LayerMask itemLayer;
-    public InventoryManager inventoryManager;
     public float range = 2;
 
     private float delayBetweenChecks = 0.2f;
@@ -32,7 +31,7 @@ public class PickUpItem : MonoBehaviour
             ItemWorld itemWorld = collider.GetComponent<ItemWorld>();
             if (itemWorld != null)
             {
-                inventoryManager.playerInventory.AddItem(itemWorld.itemData.id);
+                GameManager.instance.PlayerInventory.AddItem(itemWorld.itemData.id);
                 Destroy(collider.gameObject);
             }
         }

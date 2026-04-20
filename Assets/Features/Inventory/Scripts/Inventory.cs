@@ -1,49 +1,98 @@
 using System.Collections.Generic;
 
+public class ItemStack
+{
+    public ItemID id;
+    public int quantity;
+
+    public ItemStack(ItemID id, int quantity)
+    {
+        this.id = id;
+        this.quantity = quantity;
+    }
+}
+
 public class Inventory
 {
-    private Dictionary<ItemID, int> items = new Dictionary<ItemID, int>();
+    private Dictionary<int, ItemStack> slots = new Dictionary<int, ItemStack>();
     private int capacity = 24;
+    private ItemDatabase database;
     public event System.Action OnInventoryChanged;
+
+    public Inventory(ItemDatabase database)
+    {
+        this.database = database;
+    }
 
     public void AddItem(ItemID id)
     {
-        if (items.ContainsKey(id))
-        { 
-            items[id]++;
-            OnInventoryChanged?.Invoke();
+        ItemData data = database.GetItem(id);
+        bool isArmor = data.type == ItemType.Armor;
+
+        if (isArmor)
+        {
+            for (int i = 4; i < 8; i++)
+            {
+                if (slots.ContainsKey(i) && slots[i].id == id)
+                {
+                    slots[i].quantity++;
+                    OnInventoryChanged?.Invoke();
+                    return;
+                }
+                if (!slots.ContainsKey(i))
+                {
+                    slots[i] = new ItemStack(id, 1);
+                    OnInventoryChanged?.Invoke();
+                    return;
+                }
+            }
         }
-        else if (items.Count < capacity)
-        { 
-            items[id] = 1;
-            OnInventoryChanged?.Invoke();
+        else
+        {
+            for (int i = 0; i < capacity; i++)
+            {
+                if (i >= 4 && i < 8) continue; // saute les slots armure
+                if (slots.ContainsKey(i) && slots[i].id == id)
+                {
+                    slots[i].quantity++;
+                    OnInventoryChanged?.Invoke();
+                    return;
+                }
+                if (!slots.ContainsKey(i))
+                {
+                    slots[i] = new ItemStack(id, 1);
+                    OnInventoryChanged?.Invoke();
+                    return;
+                }
+            }
         }
-        
     }
 
     public void RemoveItem(ItemID id)
     {
-        if (items.ContainsKey(id))
-        { 
-            items[id]--; 
-            if (items[id] <= 0)
-            {  
-                items.Remove(id);
-                
+        for (int i = 0; i < capacity; i++)
+        {
+            if (slots.ContainsKey(i) && slots[i].id == id)
+            {
+                slots[i].quantity--;
+                if (slots[i].quantity <= 0)
+                    slots.Remove(i);
+                OnInventoryChanged?.Invoke();
+                return;
             }
-            OnInventoryChanged?.Invoke();
         }
     }
 
     public int GetQuantity(ItemID id)
     {
-        return items.ContainsKey(id) ? items[id] : 0;
+        int count = 0;
+        foreach (var slot in slots.Values)
+            if (slot.id == id) count += slot.quantity;
+        return count;
     }
-    
-    public Dictionary<ItemID, int> GetItems()
+
+    public Dictionary<int, ItemStack> GetSlots()
     {
-        return items;
+        return slots;
     }
-
-
 }

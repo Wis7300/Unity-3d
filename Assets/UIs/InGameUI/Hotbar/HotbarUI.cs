@@ -1,11 +1,11 @@
 using UnityEngine;
 using UnityEngine.UI;
-using System.Collections.Generic;
 using TMPro;
 
 public class HotbarUI : MonoBehaviour
 {
     private Image[] slots;
+    private int selectedSlot = 0;
     
 
     void Awake()
@@ -24,23 +24,70 @@ public class HotbarUI : MonoBehaviour
         GameManager.instance.PlayerInventory.OnInventoryChanged -= Refresh;
     }
 
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            selectedSlot = 0;
+            Refresh();
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            selectedSlot = 1;
+            Refresh();
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            selectedSlot = 2;
+            Refresh();
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha4))
+        {
+            selectedSlot = 3;
+            Refresh();
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha5))
+        {
+            selectedSlot = 4;
+            Refresh();
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha6))
+        {
+            selectedSlot = 5;
+            Refresh();
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha7))
+        {
+            selectedSlot = 6;
+            Refresh();
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha8))
+        {
+            selectedSlot = 7;
+            Refresh();
+        }
+    }
+
     void Refresh()
     {
-        var itemList = new List<ItemID>(GameManager.instance.PlayerInventory.GetItems().Keys);
-        Debug.Log(itemList.Count);
+        var slots_data = GameManager.instance.PlayerInventory.GetSlots();
         if (slots == null || slots.Length == 0) return;
         for (int i = 0; i < 8; i++)
         {
-            if (i < itemList.Count)
+            if (slots_data.ContainsKey(i))
             {
                 slots[i].color = Color.gray;
                 TextMeshProUGUI textSlot = slots[i].GetComponentInChildren<TextMeshProUGUI>();
-                textSlot.text = GameManager.instance.PlayerInventory.GetQuantity(itemList[i]).ToString();
+                textSlot.text = slots_data[i].quantity.ToString();
             }
             else
             {
                 slots[i].color = Color.white;
+                TextMeshProUGUI textSlot = slots[i].GetComponentInChildren<TextMeshProUGUI>();
+                textSlot.text = "";
             }
+            if (i == selectedSlot)
+                slots[i].color = Color.yellow;
         }
     }
 }

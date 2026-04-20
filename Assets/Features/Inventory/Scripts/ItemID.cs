@@ -4,5 +4,7 @@ public enum ItemID
     Potion,
     IronSword,
     Gold,
-    Bone
+    Bone,
+    Diamond,
+    IronChestplate
 };

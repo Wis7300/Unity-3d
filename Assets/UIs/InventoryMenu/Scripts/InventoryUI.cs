@@ -12,22 +12,22 @@ public class InventoryUI : MonoBehaviour
         Refresh();
     }
 
-
     public void Refresh()
     {
-        var itemList = new List<ItemID>(GameManager.instance.PlayerInventory.GetItems().Keys);
+        var slots_data = GameManager.instance.PlayerInventory.GetSlots();
         for (int i = 1; i < slots.Length; i++)
         {
-            if (i - 1 < itemList.Count)
+            if (slots_data.ContainsKey(i - 1))
             {
                 slots[i].color = Color.gray;
                 TextMeshProUGUI textSlot = slots[i].GetComponentInChildren<TextMeshProUGUI>();
-                textSlot.text = GameManager.instance.PlayerInventory.GetQuantity(itemList[i - 1]).ToString();
-
-            }   
+                textSlot.text = slots_data[i - 1].quantity.ToString();
+            }
             else
             {
                 slots[i].color = Color.white;
+                TextMeshProUGUI textSlot = slots[i].GetComponentInChildren<TextMeshProUGUI>();
+                textSlot.text = "";
             }
         }
     }

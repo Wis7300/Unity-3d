@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2e663f679d4e91b4080f61d5e3a297ae, type: 3}
-  m_Name: bone
+  m_Name: diamond
   m_EditorClassIdentifier: Assembly-CSharp::ItemData
-  id: 4
-  itemName: bone
-  rarety: 1
-  prefab: {fileID: 4933137688596928472, guid: 3172ef9129318224a8ef2396f6bb7b89, type: 3}
+  id: 0
+  itemName: diamond
+  rarety: 2
+  prefab: {fileID: 5086471710155612953, guid: 3f2ef051f7c50854dabbdc4e8d4af538, type: 3}
   type: 3
