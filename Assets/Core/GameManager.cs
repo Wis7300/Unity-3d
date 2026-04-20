@@ -11,6 +11,8 @@ public class GameManager : MonoBehaviour
     private GameState currentState;
 
     private Inventory playerInventory;
+    private PlayerSaveData playerSaveData;
+    public PlayerSaveData PlayerSaveData => playerSaveData;
 
     public int CurrentFloor => currentFloor;
     public int CurrentBiome => currentBiome;
@@ -29,6 +31,7 @@ public class GameManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+        playerSaveData = new PlayerSaveData();
 
         currentBiome = GetCurrentBiome();
         DontDestroyOnLoad(gameObject);

@@ -19,6 +19,7 @@ public class InventoryToggle : MonoBehaviour
             inventoryTitle.SetActive(!inventoryTitle.activeSelf);
             if (Time.timeScale == 1)
             {
+                inventoryGrid.GetComponent<InventoryUI>().Refresh();
                 Time.timeScale = 0;
             }
             else

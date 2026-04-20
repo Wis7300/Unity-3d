@@ -6,27 +6,14 @@ using TMPro;
 public class InventoryUI : MonoBehaviour
 {
     private Image[] slots;
-    private float refreshDelay = 0.5f;
     void Start()
     {
         slots = GetComponentsInChildren<Image>();
         Refresh();
     }
 
-    void Update()
-    {
-        if (refreshDelay > 0)
-        {
-            refreshDelay -= Time.unscaledDeltaTime;
-        }
-        if (refreshDelay <= 0)
-        {
-            Refresh();
-            refreshDelay = 0.5f;
-        }
-    }
 
-    void Refresh()
+    public void Refresh()
     {
         var itemList = new List<ItemID>(GameManager.instance.PlayerInventory.GetItems().Keys);
         for (int i = 1; i < slots.Length; i++)

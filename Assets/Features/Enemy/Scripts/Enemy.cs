@@ -3,7 +3,6 @@ using UnityEngine;
 public class Enemy : MonoBehaviour
 {
     public EnemyData data;
-    public GameObject player;
     public LootTableData lootTable;
 
     private int currentHP;
@@ -11,6 +10,7 @@ public class Enemy : MonoBehaviour
     private Rigidbody rb;
 
     private PlayerStats playerStats;
+    private GameObject player;
 
     void Start()
     {
@@ -20,7 +20,7 @@ public class Enemy : MonoBehaviour
         rb.constraints = RigidbodyConstraints.FreezeRotation;
 
         
-        GameObject player = GameObject.FindWithTag("Player");
+        player = GameObject.FindWithTag("Player");
 
         if (player != null)
         {
@@ -59,8 +59,6 @@ public class Enemy : MonoBehaviour
     public void TakeDamage(int amount)
     {
         currentHP -= (amount - data.defense);
-        Debug.Log(name + " took " + amount + " damage");
-        Debug.Log(name + " has " + currentHP + " HP left");
 
         if (currentHP <= 0)
         {
@@ -70,8 +68,8 @@ public class Enemy : MonoBehaviour
 
     void Die()
     {
-        Debug.Log(name + " is dead");
         DropLoot();
+        playerStats.AddXP(data.xpDropped);
         Destroy(gameObject);
     }
 
@@ -82,8 +80,6 @@ public class Enemy : MonoBehaviour
             if (Random.value <= lootTable.dropChance[i])
             {
                 GameObject obj = Instantiate(lootTable.items[i].prefab, transform.position, Quaternion.identity);
-                Debug.Log(lootTable.items[i].itemName + " dropped!");
-                
             }
         }
     }

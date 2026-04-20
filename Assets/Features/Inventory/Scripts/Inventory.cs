@@ -3,13 +3,22 @@ using System.Collections.Generic;
 public class Inventory
 {
     private Dictionary<ItemID, int> items = new Dictionary<ItemID, int>();
+    private int capacity = 24;
+    public event System.Action OnInventoryChanged;
 
     public void AddItem(ItemID id)
     {
         if (items.ContainsKey(id))
-        { items[id]++; }
-        else
-        { items[id] = 1; }
+        { 
+            items[id]++;
+            OnInventoryChanged?.Invoke();
+        }
+        else if (items.Count < capacity)
+        { 
+            items[id] = 1;
+            OnInventoryChanged?.Invoke();
+        }
+        
     }
 
     public void RemoveItem(ItemID id)
@@ -18,7 +27,11 @@ public class Inventory
         { 
             items[id]--; 
             if (items[id] <= 0)
-            {  items.Remove(id); }
+            {  
+                items.Remove(id);
+                
+            }
+            OnInventoryChanged?.Invoke();
         }
     }
 
@@ -31,4 +44,6 @@ public class Inventory
     {
         return items;
     }
+
+
 }

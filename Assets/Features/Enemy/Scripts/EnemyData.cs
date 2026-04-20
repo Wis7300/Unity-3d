@@ -10,4 +10,5 @@ public class EnemyData : ScriptableObject
     public float attackRange;
     public float detectionRange;
     public float attackCooldown;
+    public int xpDropped;
 }
