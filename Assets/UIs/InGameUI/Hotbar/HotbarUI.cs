@@ -10,26 +10,32 @@ public class HotbarUI : MonoBehaviour
 
     void Awake()
     {
-        slots = GetComponentsInChildren<Image>();
+        slots = GetComponentsInChildren<Image>(true);
+        GameManager.instance.PlayerInventory.OnInventoryChanged += Refresh;
     }
 
     void Start()
     {
-        GameManager.instance.PlayerInventory.OnInventoryChanged += Refresh;
         Refresh();
+    }
+
+    void OnDestroy()
+    {
+        GameManager.instance.PlayerInventory.OnInventoryChanged -= Refresh;
     }
 
     void Refresh()
     {
         var itemList = new List<ItemID>(GameManager.instance.PlayerInventory.GetItems().Keys);
         Debug.Log(itemList.Count);
-        for (int i = 1; (i < itemList.Count && i < 9); i++)
+        if (slots == null || slots.Length == 0) return;
+        for (int i = 0; i < 8; i++)
         {
-            if (i - 1 < itemList.Count)
+            if (i < itemList.Count)
             {
                 slots[i].color = Color.gray;
                 TextMeshProUGUI textSlot = slots[i].GetComponentInChildren<TextMeshProUGUI>();
-                textSlot.text = GameManager.instance.PlayerInventory.GetQuantity(itemList[i - 1]).ToString();
+                textSlot.text = GameManager.instance.PlayerInventory.GetQuantity(itemList[i]).ToString();
             }
             else
             {
