@@ -38,7 +38,8 @@ We are still fairly new to Unity and game development, but this project is helpi
 
 ##  Work in Progress
 
-- Adding the use of preojectiles for enemies
+- Adding the use of projectiles for enemies
+- Creation of a Game UI for the hotbar 
 - Adding animations
 - Creation of new blocs usable for levels design
 - Design of new enemies / animations 
