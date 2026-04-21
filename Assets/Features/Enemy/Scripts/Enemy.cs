@@ -37,6 +37,9 @@ public class Enemy : MonoBehaviour
 
     void Update()
     {
+        // Si le joueur n'a pas été trouvé au Start, on ne fait rien pour éviter l'erreur
+        if (player == null) return;
+
         float distance = Vector3.Distance(player.transform.position, transform.position);
         if (distance <= data.attackRange && currentCooldown <= 0f)
         {

@@ -21,7 +21,11 @@ public class HotbarUI : MonoBehaviour
 
     void OnDestroy()
     {
-        GameManager.instance.PlayerInventory.OnInventoryChanged -= Refresh;
+        // On vérifie si l'instance existe encore avant de se désabonner
+        if (GameManager.instance != null && GameManager.instance.PlayerInventory != null)
+        {
+            GameManager.instance.PlayerInventory.OnInventoryChanged -= Refresh;
+        }
     }
 
     void Update()
