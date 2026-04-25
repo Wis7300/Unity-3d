@@ -53,9 +53,8 @@ public class PlayerMovement : MonoBehaviour
         // --- GESTION DE L'ANIMATION ---
         if (anim != null)
         {
-            // On vérifie si le joueur donne un input de mouvement
-            bool isMoving = inputDirection.magnitude > 0.1f;
-            // On envoie l'info à l'Animator (assure-toi d'avoir un paramètre bool nommé "isWalking")
+            // On utilise une valeur très basse pour être sûr de capter le moindre mouvement
+            bool isMoving = inputDirection.magnitude > 0.05f;
             anim.SetBool("isWalking", isMoving);
         }
 
@@ -65,7 +64,7 @@ public class PlayerMovement : MonoBehaviour
             isDashing = true;
             dashTimer = dashDuration;
             cooldownTimer = dashCooldown;
-            dashDirection = inputDirection.magnitude > 0 ? inputDirection : transform.forward;
+            dashDirection = inputDirection.magnitude > 0 ? inputDirection : -transform.forward;
         }
 
         if (cooldownTimer > 0) cooldownTimer -= Time.deltaTime;
@@ -84,10 +83,14 @@ public class PlayerMovement : MonoBehaviour
         // --- ROTATION SMOOTH ---
         if (inputDirection.magnitude > 0 && !isDashing)
         {
-            // Calcule la rotation cible vers laquelle on veut regarder
+            // On calcule la direction vers laquelle on veut aller
             Quaternion targetRotation = Quaternion.LookRotation(inputDirection);
-            // On tourne progressivement vers cette cible
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+
+            // On ajoute un pivot de 180 degrés pour compenser le modèle inversé
+            Quaternion correctedRotation = targetRotation * Quaternion.Euler(0, 180, 0);
+
+            // On tourne progressivement vers cette rotation corrigée
+            transform.rotation = Quaternion.Slerp(transform.rotation, correctedRotation, rotationSpeed * Time.deltaTime);
         }
     }
 
