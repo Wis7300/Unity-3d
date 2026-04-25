@@ -5,29 +5,32 @@ using TMPro;
 
 public class InventoryUI : MonoBehaviour
 {
-    private Image[] slots;
+    public List<Image> slots; // assignés dans l’inspecteur
+
     void Start()
     {
-        slots = GetComponentsInChildren<Image>();
         Refresh();
     }
 
     public void Refresh()
     {
         var slots_data = GameManager.instance.PlayerInventory.GetSlots();
-        for (int i = 1; i < slots.Length; i++)
+
+        for (int i = 0; i < slots.Count; i++)
         {
-            if (slots_data.ContainsKey(i - 1))
+            TextMeshProUGUI textSlot = slots[i].GetComponentInChildren<TextMeshProUGUI>();
+
+            if (slots_data.ContainsKey(i))
             {
                 slots[i].color = Color.gray;
-                TextMeshProUGUI textSlot = slots[i].GetComponentInChildren<TextMeshProUGUI>();
-                textSlot.text = slots_data[i - 1].quantity.ToString();
+                if (textSlot != null)
+                    textSlot.text = slots_data[i].quantity.ToString();
             }
             else
             {
                 slots[i].color = Color.white;
-                TextMeshProUGUI textSlot = slots[i].GetComponentInChildren<TextMeshProUGUI>();
-                textSlot.text = "";
+                if (textSlot != null)
+                    textSlot.text = "";
             }
         }
     }
