@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEditor.dll::UnityEditor.ContainerWindow
   m_PixelRect:
     serializedVersion: 2
-    x: 0
+    x: 1920
     y: 43
     width: 1920
     height: 989
@@ -141,7 +141,7 @@ MonoBehaviour:
     serializedVersion: 2
     x: 0
     y: 0
-    width: 993
+    width: 992
     height: 933
   m_MinSize: {x: 100, y: 112}
   m_MaxSize: {x: 8096, y: 16192}
@@ -165,7 +165,7 @@ MonoBehaviour:
     serializedVersion: 2
     x: 0
     y: 0
-    width: 993
+    width: 992
     height: 484
   m_MinSize: {x: 201, y: 226}
   m_MaxSize: {x: 4001, y: 4026}
@@ -174,7 +174,7 @@ MonoBehaviour:
   - {fileID: 16}
   - {fileID: 15}
   m_Selected: 0
-  m_LastSelected: 1
+  m_LastSelected: 0
 --- !u!114 &8
 MonoBehaviour:
   m_ObjectHideFlags: 52
@@ -192,7 +192,7 @@ MonoBehaviour:
     serializedVersion: 2
     x: 0
     y: 484
-    width: 993
+    width: 992
     height: 449
   m_MinSize: {x: 201, y: 226}
   m_MaxSize: {x: 4001, y: 4026}
@@ -219,14 +219,14 @@ MonoBehaviour:
   - {fileID: 11}
   m_Position:
     serializedVersion: 2
-    x: 993
+    x: 992
     y: 0
     width: 562
     height: 933
   m_MinSize: {x: 200, y: 56}
   m_MaxSize: {x: 16192, y: 8096}
   vertical: 0
-  controlID: 110
+  controlID: 112
   draggingID: 0
 --- !u!114 &10
 MonoBehaviour:
@@ -296,9 +296,9 @@ MonoBehaviour:
   m_Children: []
   m_Position:
     serializedVersion: 2
-    x: 1555
+    x: 1554
     y: 0
-    width: 365
+    width: 366
     height: 933
   m_MinSize: {x: 276, y: 76}
   m_MaxSize: {x: 4001, y: 4026}
@@ -348,7 +348,7 @@ MonoBehaviour:
   m_LockTracker:
     m_IsLocked: 0
   m_LastSelectedObjectID:
-    m_Data: 49014
+    m_Data: 0
 --- !u!114 &14
 MonoBehaviour:
   m_ObjectHideFlags: 52
@@ -370,7 +370,7 @@ MonoBehaviour:
     m_TextWithWhitespace: "UnityEditor.MainToolbarWindow\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 0
+    x: 1920
     y: 43
     width: 1920
     height: 36
@@ -744,9 +744,9 @@ MonoBehaviour:
     m_TextWithWhitespace: "Scene\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 0
+    x: 1920
     y: 79
-    width: 992
+    width: 991
     height: 458
   m_SerializedDataModeController:
     m_DataMode: 0
@@ -1332,9 +1332,9 @@ MonoBehaviour:
   m_AudioPlay: 0
   m_DebugDrawModesUseInteractiveLightBakingData: 0
   m_Position:
-    m_Target: {x: -2.1254754, y: -6.1762586, z: 33.565388}
+    m_Target: {x: -4.8315735, y: -0.897594, z: 28.489777}
     speed: 2
-    m_Value: {x: -2.1254754, y: -6.1762586, z: 33.565388}
+    m_Value: {x: -4.8315735, y: -0.897594, z: 28.489777}
   m_RenderMode: 0
   m_CameraMode:
     drawMode: 0
@@ -1381,13 +1381,13 @@ MonoBehaviour:
     m_gridOpacity: 0.5
     m_NearestPlaneToHandleMode: 0
   m_Rotation:
-    m_Target: {x: 0.11223812, y: -0.02086574, z: 0.0023573735, w: 0.99346006}
+    m_Target: {x: 0.096263155, y: -0.52933526, z: 0.060607035, w: 0.8407526}
     speed: 2
-    m_Value: {x: 0.11223805, y: -0.020865727, z: 0.002357372, w: 0.99345946}
+    m_Value: {x: 0.09491206, y: -0.53068614, z: 0.059955377, w: 0.8401007}
   m_Size:
-    m_Target: 18.037138
+    m_Target: 11.849597
     speed: 2
-    m_Value: 17.26042
+    m_Value: 11.849597
   m_Ortho:
     m_Target: 0
     speed: 2
@@ -1442,9 +1442,9 @@ MonoBehaviour:
     m_TextWithWhitespace: "Game\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 0
+    x: 1920
     y: 563
-    width: 992
+    width: 991
     height: 423
   m_SerializedDataModeController:
     m_DataMode: 0
@@ -1465,7 +1465,7 @@ MonoBehaviour:
   m_ShowGizmos: 0
   m_TargetDisplay: 0
   m_ClearColor: {r: 0, g: 0, b: 0, a: 0}
-  m_TargetSize: {x: 992, y: 402}
+  m_TargetSize: {x: 991, y: 402}
   m_TextureFilterMode: 0
   m_TextureHideFlags: 61
   m_RenderIMGUI: 1
@@ -1480,8 +1480,8 @@ MonoBehaviour:
     m_VRangeLocked: 0
     hZoomLockedByDefault: 0
     vZoomLockedByDefault: 0
-    m_HBaseRangeMin: -496
-    m_HBaseRangeMax: 496
+    m_HBaseRangeMin: -495.5
+    m_HBaseRangeMax: 495.5
     m_VBaseRangeMin: -201
     m_VBaseRangeMax: 201
     m_HAllowExceedBaseRangeMin: 1
@@ -1501,23 +1501,23 @@ MonoBehaviour:
       serializedVersion: 2
       x: 0
       y: 21
-      width: 992
+      width: 991
       height: 402
     m_Scale: {x: 1, y: 1}
-    m_Translation: {x: 496, y: 201}
+    m_Translation: {x: 495.5, y: 201}
     m_MarginLeft: 0
     m_MarginRight: 0
     m_MarginTop: 0
     m_MarginBottom: 0
     m_LastShownAreaInsideMargins:
       serializedVersion: 2
-      x: -496
+      x: -495.5
       y: -201
-      width: 992
+      width: 991
       height: 402
     m_MinimalGUI: 1
   m_defaultScale: 1
-  m_LastWindowPixelSize: {x: 992, y: 423}
+  m_LastWindowPixelSize: {x: 991, y: 423}
   m_ClearInEditMode: 1
   m_NoCameraWarning: 1
   m_LowResolutionForAspectRatios: 01000000000000000000
@@ -1545,7 +1545,7 @@ MonoBehaviour:
     m_TextWithWhitespace: "Project\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 993
+    x: 2912
     y: 79
     width: 347
     height: 907
@@ -1573,7 +1573,7 @@ MonoBehaviour:
     m_SkipHidden: 0
     m_SearchArea: 1
     m_Folders:
-    - Assets/Features/Player/Prefabs
+    - Assets/Art/Textures
     m_Globs: []
     m_ProductIds: 
     m_AnyWithAssetOrigin: 0
@@ -1583,7 +1583,7 @@ MonoBehaviour:
   m_ViewMode: 1
   m_StartGridSize: 46
   m_LastFolders:
-  - Assets/Features/Player/Prefabs
+  - Assets/Art/Textures
   m_LastFoldersGridSize: 46
   m_LastProjectPath: C:\Users\peyra\Documents\GitHub\Unity-3d
   m_LockTracker:
@@ -1592,9 +1592,9 @@ MonoBehaviour:
   m_FolderTreeState:
     scrollPos: {x: 0, y: 0}
     m_SelectedIDs:
-    - m_Data: 50800
+    - m_Data: 50786
     m_LastClickedID:
-      m_Data: 50800
+      m_Data: 50786
     m_ExpandedIDs:
     - m_Data: 0
     - m_Data: 50650
@@ -1604,6 +1604,7 @@ MonoBehaviour:
     - m_Data: 50658
     - m_Data: 50660
     - m_Data: 50662
+    - m_Data: 50804
     - m_Data: 1000000000
     m_RenameOverlay:
       m_UserAcceptedRename: 0
@@ -1683,6 +1684,7 @@ MonoBehaviour:
     - m_Data: 76444
     - m_Data: 51268
     - m_Data: 49014
+    - m_Data: 50930
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1772,7 +1774,7 @@ MonoBehaviour:
     m_TextWithWhitespace: "Hierarchy\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 1342
+    x: 3261
     y: 79
     width: 211
     height: 907
@@ -1796,8 +1798,9 @@ MonoBehaviour:
       m_LastClickedID:
         m_Data: 0
       m_ExpandedIDs:
+      - m_Data: -272552
+      - m_Data: -2392
       - m_Data: -1324
-      - m_Data: 48854
       m_RenameOverlay:
         m_UserAcceptedRename: 0
         m_Name: 
@@ -1845,9 +1848,9 @@ MonoBehaviour:
     m_TextWithWhitespace: "Inspector\u200B"
   m_Pos:
     serializedVersion: 2
-    x: 1555
+    x: 3474
     y: 79
-    width: 364
+    width: 365
     height: 907
   m_SerializedDataModeController:
     m_DataMode: 0
