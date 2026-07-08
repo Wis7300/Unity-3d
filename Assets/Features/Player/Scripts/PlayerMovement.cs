@@ -5,7 +5,7 @@ public class PlayerMovement : MonoBehaviour
     public float speed = 7f;
     private Rigidbody rb;
     private Camera cam;
-    private Animator anim; // Référence pour l'animation
+    private Animator anim;
 
     [Header("Dash Settings")]
     public float dashForce = 20f;
@@ -16,19 +16,24 @@ public class PlayerMovement : MonoBehaviour
     public float gravityScale = 5f;
 
     [Header("Smooth Settings")]
-    public float rotationSpeed = 10f; // Vitesse de rotation (plus c'est haut, plus c'est réactif)
+    public float rotationSpeed = 10f;
+
+    [Header("Système de Marches Voxel")]
+    public float stepHeight = 1.1f;       // Hauteur max d'une marche que le joueur peut monter (1 bloc = 1m)
+    public float stepSmooth = 0.2f;       // Vitesse de montée de la marche
 
     private float dashTimer;
     private float cooldownTimer;
     private Vector3 dashDirection;
     private bool isDashing;
     private Vector3 currentVelocity;
+    private Vector3 inputDirection;
 
     void Start()
     {
         rb = GetComponent<Rigidbody>();
         cam = Camera.main;
-        anim = GetComponent<Animator>(); // On récupère l'Animator au lancement
+        anim = GetComponent<Animator>();
 
         rb.constraints = RigidbodyConstraints.FreezeRotation;
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
@@ -48,17 +53,14 @@ public class PlayerMovement : MonoBehaviour
         forward = forward.normalized;
         right = right.normalized;
 
-        Vector3 inputDirection = (forward * moveZ + right * moveX).normalized;
+        inputDirection = (forward * moveZ + right * moveX).normalized;
 
-        // --- GESTION DE L'ANIMATION ---
         if (anim != null)
         {
-            // On utilise une valeur très basse pour être sûr de capter le moindre mouvement
             bool isMoving = inputDirection.magnitude > 0.05f;
             anim.SetBool("isWalking", isMoving);
         }
 
-        // --- LOGIQUE DU DASH ---
         if (Input.GetKeyDown(KeyCode.Space) && cooldownTimer <= 0)
         {
             isDashing = true;
@@ -80,16 +82,10 @@ public class PlayerMovement : MonoBehaviour
             currentVelocity = inputDirection * speed;
         }
 
-        // --- ROTATION SMOOTH ---
         if (inputDirection.magnitude > 0 && !isDashing)
         {
-            // On calcule la direction vers laquelle on veut aller
             Quaternion targetRotation = Quaternion.LookRotation(inputDirection);
-
-            // On ajoute un pivot de 180 degrés pour compenser le modèle inversé
             Quaternion correctedRotation = targetRotation * Quaternion.Euler(0, 180, 0);
-
-            // On tourne progressivement vers cette rotation corrigée
             transform.rotation = Quaternion.Slerp(transform.rotation, correctedRotation, rotationSpeed * Time.deltaTime);
         }
     }
@@ -98,5 +94,32 @@ public class PlayerMovement : MonoBehaviour
     {
         rb.AddForce(Vector3.down * gravityScale, ForceMode.Acceleration);
         rb.linearVelocity = new Vector3(currentVelocity.x, rb.linearVelocity.y, currentVelocity.z);
+
+        // Lancer la détection de marche automatique
+        if (inputDirection.magnitude > 0.05f)
+        {
+            StepClimb();
+        }
+    }
+
+    // Système optimisé pour enjamber automatiquement les blocs de 1m
+    void StepClimb()
+    {
+        // Raycast 1 : Au niveau des pieds pour détecter s'il y a un mur/bloc devant
+        RaycastHit hitLower;
+        Vector3 rayLowerPos = transform.position + new Vector3(0, 0.1f, 0);
+
+        if (Physics.Raycast(rayLowerPos, inputDirection, out hitLower, 0.6f))
+        {
+            // Raycast 2 : Un peu plus haut (hauteur max de la marche) pour vérifier que le bloc n'est pas un mur trop haut
+            RaycastHit hitUpper;
+            Vector3 rayUpperPos = transform.position + new Vector3(0, stepHeight, 0);
+
+            if (!Physics.Raycast(rayUpperPos, inputDirection, out hitUpper, 0.7f))
+            {
+                // Si le bas touche mais pas le haut, c'est une marche ! On pousse doucement le joueur vers le haut
+                rb.position += new Vector3(0, stepSmooth, 0);
+            }
+        }
     }
 }
