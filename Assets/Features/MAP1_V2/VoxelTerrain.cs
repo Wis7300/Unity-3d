@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(MeshFilter), typeof(MeshCollider))]
 public class VoxelTerrain : MonoBehaviour
 {
     [Header("Configurations")]
@@ -16,11 +17,16 @@ public class VoxelTerrain : MonoBehaviour
     public int viewRadiusInBlocks = 40;
 
     private Dictionary<Vector3Int, GameObject> activeBlocks = new Dictionary<Vector3Int, GameObject>();
-    private List<BoxCollider> generatedColliders = new List<BoxCollider>();
     private Vector3Int lastPlayerBlockPos;
+
+    private MeshFilter meshFilter;
+    private MeshCollider meshCollider;
 
     void Start()
     {
+        meshFilter = GetComponent<MeshFilter>();
+        meshCollider = GetComponent<MeshCollider>();
+
         if (player == null)
         {
             GameObject foundPlayer = GameObject.FindGameObjectWithTag("Player");
@@ -58,7 +64,8 @@ public class VoxelTerrain : MonoBehaviour
         int maxWorldX = (heightMap.width - 1) * scaleMultiplier;
         int maxWorldZ = (heightMap.height - 1) * scaleMultiplier;
 
-        // 1. Déterminer les blocs qui doivent être présents
+        bool terrainChanged = false;
+
         for (int x = playerPos.x - viewRadiusInBlocks; x <= playerPos.x + viewRadiusInBlocks; x++)
         {
             for (int z = playerPos.z - viewRadiusInBlocks; z <= playerPos.z + viewRadiusInBlocks; z++)
@@ -89,13 +96,13 @@ public class VoxelTerrain : MonoBehaviour
                             Vector3 worldPos = new Vector3(x, blockY, z);
                             GameObject newBlock = Instantiate(cubePrefab, worldPos, Quaternion.identity, transform);
                             activeBlocks.Add(blockCoords, newBlock);
+                            terrainChanged = true;
                         }
                     }
                 }
             }
         }
 
-        // 2. Nettoyage des blocs éloignés
         List<Vector3Int> blocksToRemove = new List<Vector3Int>();
         foreach (var block in activeBlocks)
         {
@@ -103,52 +110,40 @@ public class VoxelTerrain : MonoBehaviour
             {
                 Destroy(block.Value);
                 blocksToRemove.Add(block.Key);
+                terrainChanged = true;
             }
         }
         foreach (var key in blocksToRemove) activeBlocks.Remove(key);
 
-        // 3. RECONSTRUCTION DES HITBOXS FUSIONNÉES
-        GenerateMergedColliders(playerPos);
+        // Si des blocs sont apparus ou ont disparu, on recalcule la hitbox globale fusionnée
+        if (terrainChanged)
+        {
+            BakeGlobalCollider();
+        }
     }
 
-    // Algorithme de fusion horizontale des colliders (X Axis Grid)
-    void GenerateMergedColliders(Vector3Int playerPos)
+    // Fusionne tous les rendus des cubes en une seule et unique structure physique continue
+    void BakeGlobalCollider()
     {
-        // Supprimer les anciens colliders globaux temporaires
-        foreach (var col in generatedColliders) if (col != null) Destroy(col);
-        generatedColliders.Clear();
+        MeshFilter[] meshFilters = GetComponentsInChildren<MeshFilter>();
+        CombineInstance[] combine = new CombineInstance[meshFilters.Length - 1]; // -1 pour exclure le parent lui-même
 
-        // On crée un dictionnaire temporaire pour marquer les blocs traités lors de la fusion
-        HashSet<Vector3Int> visited = new HashSet<Vector3Int>();
-
-        foreach (var pair in activeBlocks)
+        int index = 0;
+        for (int i = 0; i < meshFilters.Length; i++)
         {
-            Vector3Int startPos = pair.Key;
+            if (meshFilters[i].gameObject == gameObject) continue; // Ignore le parent TerrainGen
 
-            if (visited.Contains(startPos)) continue;
-
-            // On cherche jusqu'où on peut étirer la hitbox sur l'axe X à la même hauteur (Y) et même ligne (Z)
-            int lengthX = 1;
-            while (activeBlocks.ContainsKey(new Vector3Int(startPos.x + lengthX, startPos.y, startPos.z)) &&
-                   !visited.Contains(new Vector3Int(startPos.x + lengthX, startPos.y, startPos.z)))
-            {
-                lengthX++;
-            }
-
-            // Marquer ces blocs comme fusionnés
-            for (int i = 0; i < lengthX; i++)
-            {
-                visited.Add(new Vector3Int(startPos.x + i, startPos.y, startPos.z));
-            }
-
-            // Créer une seule BoxCollider pour toute cette rangée
-            BoxCollider newCollider = gameObject.AddComponent<BoxCollider>();
-
-            // Calcul du centre et de la taille de la boîte fusionnée
-            newCollider.center = new Vector3(startPos.x + (lengthX - 1) * 0.5f, startPos.y, startPos.z);
-            newCollider.size = new Vector3(lengthX, 1.005f, 1.005f); // Un poil plus grand pour bloquer les trous entre diagonales
-
-            generatedColliders.Add(newCollider);
+            combine[index].mesh = meshFilters[i].sharedMesh;
+            combine[index].transform = meshFilters[i].transform.localToWorldMatrix;
+            index++;
         }
+
+        Mesh combinedMesh = new Mesh();
+        combinedMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32; // Permet de dépasser la limite des 65k cubes
+        combinedMesh.CombineMeshes(combine, true, true);
+
+        // On applique le mesh fusionné au collider global
+        meshFilter.sharedMesh = combinedMesh;
+        meshCollider.sharedMesh = combinedMesh;
     }
 }

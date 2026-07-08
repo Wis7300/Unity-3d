@@ -257,6 +257,8 @@ GameObject:
   m_Component:
   - component: {fileID: 150748105}
   - component: {fileID: 150748106}
+  - component: {fileID: 150748108}
+  - component: {fileID: 150748107}
   m_Layer: 0
   m_Name: TerrainGen
   m_TagString: Untagged
@@ -273,7 +275,7 @@ Transform:
   m_GameObject: {fileID: 150748104}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -13.373211, y: 253.42896, z: 0.96528006}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -297,6 +299,36 @@ MonoBehaviour:
   maxHeightInBlocks: 120
   scaleMultiplier: 4
   viewRadiusInBlocks: 50
+--- !u!64 &150748107
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 150748104}
+  m_Material: {fileID: 13400000, guid: 66a349c050038c7438d8ede52f108bed, type: 2}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 0}
+--- !u!33 &150748108
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 150748104}
+  m_Mesh: {fileID: 0}
 --- !u!114 &193581538 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5654326168974173524, guid: b84df03de587b8f4e8369ed647c6f324, type: 3}
@@ -2992,7 +3024,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4872113387972882883, guid: d4eb3b43da9c8fe47bd006c7b6ffbed6, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 132.04
+      value: 92.82
       objectReference: {fileID: 0}
     - target: {fileID: 4872113387972882883, guid: d4eb3b43da9c8fe47bd006c7b6ffbed6, type: 3}
       propertyPath: m_LocalPosition.z
