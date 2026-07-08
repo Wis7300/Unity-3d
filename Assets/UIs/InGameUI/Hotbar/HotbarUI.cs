@@ -6,22 +6,24 @@ public class HotbarUI : MonoBehaviour
 {
     private Image[] slots;
     private int selectedSlot = 0;
-    
 
     void Awake()
     {
         slots = GetComponentsInChildren<Image>(true);
-        GameManager.instance.PlayerInventory.OnInventoryChanged += Refresh;
     }
 
     void Start()
     {
+        // SÉCURITÉ : On vérifie que tout le GameManager est bien prêt
+        if (GameManager.instance != null && GameManager.instance.PlayerInventory != null)
+        {
+            GameManager.instance.PlayerInventory.OnInventoryChanged += Refresh;
+        }
         Refresh();
     }
 
     void OnDestroy()
     {
-        // On vérifie si l'instance existe encore avant de se désabonner
         if (GameManager.instance != null && GameManager.instance.PlayerInventory != null)
         {
             GameManager.instance.PlayerInventory.OnInventoryChanged -= Refresh;
@@ -30,66 +32,40 @@ public class HotbarUI : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.Alpha1))
+        for (int i = 0; i < 8; i++)
         {
-            selectedSlot = 0;
-            Refresh();
-        }
-        else if (Input.GetKeyDown(KeyCode.Alpha2))
-        {
-            selectedSlot = 1;
-            Refresh();
-        }
-        else if (Input.GetKeyDown(KeyCode.Alpha3))
-        {
-            selectedSlot = 2;
-            Refresh();
-        }
-        else if (Input.GetKeyDown(KeyCode.Alpha4))
-        {
-            selectedSlot = 3;
-            Refresh();
-        }
-        else if (Input.GetKeyDown(KeyCode.Alpha5))
-        {
-            selectedSlot = 4;
-            Refresh();
-        }
-        else if (Input.GetKeyDown(KeyCode.Alpha6))
-        {
-            selectedSlot = 5;
-            Refresh();
-        }
-        else if (Input.GetKeyDown(KeyCode.Alpha7))
-        {
-            selectedSlot = 6;
-            Refresh();
-        }
-        else if (Input.GetKeyDown(KeyCode.Alpha8))
-        {
-            selectedSlot = 7;
-            Refresh();
+            if (Input.GetKeyDown(KeyCode.Alpha1 + i))
+            {
+                selectedSlot = i;
+                Refresh();
+            }
         }
     }
 
     void Refresh()
     {
-        var slots_data = GameManager.instance.PlayerInventory.GetSlots();
+        // SÉCURITÉ : Si l'inventaire n'est pas encore instancié
+        if (GameManager.instance == null || GameManager.instance.PlayerInventory == null) return;
         if (slots == null || slots.Length == 0) return;
-        for (int i = 0; i < 8; i++)
+
+        var slots_data = GameManager.instance.PlayerInventory.GetSlots();
+        if (slots_data == null) return;
+
+        for (int i = 0; i < Mathf.Min(8, slots.Length); i++)
         {
+            TextMeshProUGUI textSlot = slots[i].GetComponentInChildren<TextMeshProUGUI>();
+
             if (slots_data.ContainsKey(i))
             {
                 slots[i].color = Color.gray;
-                TextMeshProUGUI textSlot = slots[i].GetComponentInChildren<TextMeshProUGUI>();
-                textSlot.text = slots_data[i].quantity.ToString();
+                if (textSlot != null) textSlot.text = slots_data[i].quantity.ToString();
             }
             else
             {
                 slots[i].color = Color.white;
-                TextMeshProUGUI textSlot = slots[i].GetComponentInChildren<TextMeshProUGUI>();
-                textSlot.text = "";
+                if (textSlot != null) textSlot.text = "";
             }
+
             if (i == selectedSlot)
                 slots[i].color = Color.yellow;
         }

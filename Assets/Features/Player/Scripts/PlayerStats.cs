@@ -22,9 +22,14 @@ public class PlayerStats : MonoBehaviour
 
     void Start()
     {
-        saveData = GameManager.instance.PlayerSaveData;
+        // Sécurité en cas d'absence de GameManager dans la scène de test
+        if (GameManager.instance != null)
+        {
+            saveData = GameManager.instance.PlayerSaveData;
+        }
 
-        if (saveData.level > 0)
+        // Si on a une sauvegarde valide
+        if (saveData != null && saveData.level > 0)
         {
             maxHealth = saveData.maxHealth;
             currentHealth = saveData.currentHealth;
@@ -37,10 +42,16 @@ public class PlayerStats : MonoBehaviour
             toxicity = saveData.toxicity;
             freeze = saveData.freeze;
             warm = saveData.warm;
-
         }
         else
         {
+            // Secours : On charge les stats de base du ScriptableObject
+            if (statsData == null)
+            {
+                Debug.LogError("⚠️ [PlayerStats] 'statsData' n'est pas assigné dans l'inspecteur du joueur !");
+                return;
+            }
+
             maxHealth = statsData.maxHealth;
             currentHealth = statsData.maxHealth;
             attackDamage = statsData.damage;

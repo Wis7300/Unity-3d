@@ -103,22 +103,28 @@ public class PlayerMovement : MonoBehaviour
     }
 
     // Système optimisé pour enjamber automatiquement les blocs de 1m
+    // Système de Step Climb instantané et ultra réactif
     void StepClimb()
     {
-        // Raycast 1 : Au niveau des pieds pour détecter s'il y a un mur/bloc devant
+        // Raycast bas : Détecte l'obstacle devant les pieds
         RaycastHit hitLower;
-        Vector3 rayLowerPos = transform.position + new Vector3(0, 0.1f, 0);
+        Vector3 rayLowerPos = transform.position + new Vector3(0, 0.05f, 0); // Légèrement abaissé pour une détection maximale
 
-        if (Physics.Raycast(rayLowerPos, inputDirection, out hitLower, 0.6f))
+        // On projette le rayon un poil plus loin (0.75f) pour anticiper la collision
+        if (Physics.Raycast(rayLowerPos, inputDirection, out hitLower, 0.75f))
         {
-            // Raycast 2 : Un peu plus haut (hauteur max de la marche) pour vérifier que le bloc n'est pas un mur trop haut
+            // Raycast haut : Vérifie s'il y a de la place au-dessus pour monter
             RaycastHit hitUpper;
             Vector3 rayUpperPos = transform.position + new Vector3(0, stepHeight, 0);
 
-            if (!Physics.Raycast(rayUpperPos, inputDirection, out hitUpper, 0.7f))
+            if (!Physics.Raycast(rayUpperPos, inputDirection, out hitUpper, 0.85f))
             {
-                // Si le bas touche mais pas le haut, c'est une marche ! On pousse doucement le joueur vers le haut
-                rb.position += new Vector3(0, stepSmooth, 0);
+                // FORCE LA MONTÉE IMMÉDIATE : On téléporte le Rigidbody juste au-dessus de la marche
+                // stepSmooth est ici utilisé comme un multiplicateur d'impulsion verticale
+                rb.position += new Vector3(0, 0.25f, 0);
+
+                // On conserve une légère impulsion vers l'avant pour ne pas tuer l'élan du joueur
+                rb.linearVelocity = new Vector3(rb.linearVelocity.x, 2f, rb.linearVelocity.z);
             }
         }
     }

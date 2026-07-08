@@ -14,10 +14,15 @@ public class InventoryUI : MonoBehaviour
 
     public void Refresh()
     {
+        // SÉCURITÉ : On s'assure que l'inventaire existe avant de demander ses slots
+        if (GameManager.instance == null || GameManager.instance.PlayerInventory == null) return;
+
         var slots_data = GameManager.instance.PlayerInventory.GetSlots();
+        if (slots_data == null) return;
 
         for (int i = 0; i < slots.Count; i++)
         {
+            if (slots[i] == null) continue;
             TextMeshProUGUI textSlot = slots[i].GetComponentInChildren<TextMeshProUGUI>();
 
             if (slots_data.ContainsKey(i))
