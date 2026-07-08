@@ -95,37 +95,56 @@ public class PlayerMovement : MonoBehaviour
         rb.AddForce(Vector3.down * gravityScale, ForceMode.Acceleration);
         rb.linearVelocity = new Vector3(currentVelocity.x, rb.linearVelocity.y, currentVelocity.z);
 
-        // Lancer la détection de marche automatique
+        // Lancer la détection de marche automatique basé sur la direction réelle
         if (inputDirection.magnitude > 0.05f)
         {
             StepClimb();
         }
     }
 
-    // Système optimisé pour enjamber automatiquement les blocs de 1m
-    // Système de Step Climb instantané et ultra réactif
+    // Version volumétrique élargie pour mieux capter les blocs en face
     void StepClimb()
     {
-        // Raycast bas : Détecte l'obstacle devant les pieds
-        RaycastHit hitLower;
-        Vector3 rayLowerPos = transform.position + new Vector3(0, 0.05f, 0); // Légèrement abaissé pour une détection maximale
+        Vector3 moveDir = inputDirection.normalized;
 
-        // On projette le rayon un poil plus loin (0.75f) pour anticiper la collision
-        if (Physics.Raycast(rayLowerPos, inputDirection, out hitLower, 0.75f))
+        // Nouvelle taille : 0.7m de large/profond et 0.4m de haut pour englober une plus grande zone
+        // On l'avance à 0.45m pour détecter le bloc une fraction de seconde plus tôt
+        Vector3 detectionCenter = transform.position + (moveDir * 0.45f) + new Vector3(0f, 0.25f, 0f);
+        Vector3 boxHalfExtents = new Vector3(0.35f, 0.2f, 0.35f);
+
+        Collider[] hitColliders = Physics.OverlapBox(detectionCenter, boxHalfExtents, Quaternion.identity);
+
+        bool blockDetectedAtFeet = false;
+        foreach (var col in hitColliders)
         {
-            // Raycast haut : Vérifie s'il y a de la place au-dessus pour monter
-            RaycastHit hitUpper;
-            Vector3 rayUpperPos = transform.position + new Vector3(0, stepHeight, 0);
-
-            if (!Physics.Raycast(rayUpperPos, inputDirection, out hitUpper, 0.85f))
+            if (col.gameObject != gameObject && !col.isTrigger)
             {
-                // FORCE LA MONTÉE IMMÉDIATE : On téléporte le Rigidbody juste au-dessus de la marche
-                // stepSmooth est ici utilisé comme un multiplicateur d'impulsion verticale
-                rb.position += new Vector3(0, 0.25f, 0);
-
-                // On conserve une légère impulsion vers l'avant pour ne pas tuer l'élan du joueur
-                rb.linearVelocity = new Vector3(rb.linearVelocity.x, 2f, rb.linearVelocity.z);
+                blockDetectedAtFeet = true;
+                break;
             }
+        }
+
+        if (blockDetectedAtFeet)
+        {
+            Vector3 rayUpperPos = transform.position + new Vector3(0f, stepHeight, 0f);
+
+            if (!Physics.Raycast(rayUpperPos, moveDir, out RaycastHit hitUpper, 0.9f))
+            {
+                rb.position += new Vector3(0f, stepSmooth, 0f);
+                rb.linearVelocity = new Vector3(rb.linearVelocity.x, 2.5f, rb.linearVelocity.z);
+            }
+        }
+    }
+
+    // Dessine le nouveau cube bleu agrandi dans l'éditeur
+    private void OnDrawGizmos()
+    {
+        if (Application.isPlaying && inputDirection.magnitude > 0.05f)
+        {
+            Gizmos.color = Color.cyan;
+            Vector3 detectionCenter = transform.position + (inputDirection.normalized * 0.45f) + new Vector3(0f, 0.25f, 0f);
+            // Affichage de la boîte aux nouvelles dimensions (0.7m x 0.4m x 0.7m)
+            Gizmos.DrawWireCube(detectionCenter, new Vector3(0.7f, 0.4f, 0.7f));
         }
     }
 }

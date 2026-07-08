@@ -121,29 +121,65 @@ public class VoxelTerrain : MonoBehaviour
             BakeGlobalCollider();
         }
     }
+    [Header("Débogage Visuel")]
+    public bool showColliderWireframe = true; // Case à cocher dans l'Inspecteur
 
-    // Fusionne tous les rendus des cubes en une seule et unique structure physique continue
+    // Fusionne tous les rendus des cubes en un seul maillage physique lisse et unique
     void BakeGlobalCollider()
     {
         MeshFilter[] meshFilters = GetComponentsInChildren<MeshFilter>();
-        CombineInstance[] combine = new CombineInstance[meshFilters.Length - 1]; // -1 pour exclure le parent lui-même
 
-        int index = 0;
+        if (meshFilters.Length <= 1) return;
+
+        List<CombineInstance> combineList = new List<CombineInstance>();
+
         for (int i = 0; i < meshFilters.Length; i++)
         {
-            if (meshFilters[i].gameObject == gameObject) continue; // Ignore le parent TerrainGen
+            if (meshFilters[i].gameObject == gameObject) continue;
+            if (meshFilters[i].sharedMesh == null) continue;
 
-            combine[index].mesh = meshFilters[i].sharedMesh;
-            combine[index].transform = meshFilters[i].transform.localToWorldMatrix;
-            index++;
+            CombineInstance c = new CombineInstance();
+            c.mesh = meshFilters[i].sharedMesh;
+            c.transform = transform.worldToLocalMatrix * meshFilters[i].transform.localToWorldMatrix;
+
+            combineList.Add(c);
         }
 
-        Mesh combinedMesh = new Mesh();
-        combinedMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32; // Permet de dépasser la limite des 65k cubes
-        combinedMesh.CombineMeshes(combine, true, true);
+        if (combineList.Count == 0) return;
 
-        // On applique le mesh fusionné au collider global
+        Mesh combinedMesh = new Mesh();
+        combinedMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+
+        // TRUC PHYSIQUE : fusionner les sous-maillages en une seule topologie (true, true)
+        combinedMesh.CombineMeshes(combineList.ToArray(), true, true);
+
+        // Nettoie et soude virtuellement les normales pour supprimer les collisions fantômes sur les arêtes internes
+        combinedMesh.RecalculateBounds();
+        combinedMesh.RecalculateNormals();
+        combinedMesh.Optimize();
+
         meshFilter.sharedMesh = combinedMesh;
         meshCollider.sharedMesh = combinedMesh;
+    }
+
+    // Dessine uniquement les contours du Mesh Collider en vert fluo si activé
+    private void OnDrawGizmos()
+    {
+        if (!showColliderWireframe) return;
+
+        MeshCollider collider = GetComponent<MeshCollider>();
+
+        if (collider != null && collider.sharedMesh != null)
+        {
+            // Vert fluo bien visible pour les lignes
+            Gizmos.color = new Color(0f, 1f, 0f, 0.8f);
+
+            Gizmos.DrawWireMesh(
+                collider.sharedMesh,
+                transform.position,
+                transform.rotation,
+                transform.localScale
+            );
+        }
     }
 }
