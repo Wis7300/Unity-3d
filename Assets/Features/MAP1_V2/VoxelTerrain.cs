@@ -16,17 +16,16 @@ public class VoxelTerrain : MonoBehaviour
     [Header("Système de Chunks")]
     [Tooltip("Nombre de chunks affichés autour du joueur")]
     public int chunkViewDistance = 4;
-    public const int ChunkSize = 16; // Taille fixe d'un chunk (16x16 blocs)
+    public const int ChunkSize = 16;
 
     [Header("Débogage Visuel")]
     public bool showColliderWireframe = true;
 
-    // Stockage des chunks actifs : Clé = (ChunkX, ChunkZ)
     private Dictionary<Vector2Int, ChunkData> activeChunks = new Dictionary<Vector2Int, ChunkData>();
     private Vector2Int lastPlayerChunkPos = new Vector2Int(-999, -999);
     private bool isUpdatingTerrain = false;
+    private Rigidbody playerRb; // Référence pour geler le joueur au démarrage
 
-    // Classe interne pour structurer un Chunk
     private class ChunkData
     {
         public GameObject chunkContainer;
@@ -48,8 +47,14 @@ public class VoxelTerrain : MonoBehaviour
             if (foundPlayer != null) player = foundPlayer.transform;
         }
 
+        if (player != null)
+        {
+            playerRb = player.GetComponent<Rigidbody>();
+        }
+
         if (heightMap == null || cubePrefab == null || player == null) return;
 
+        // On lance la première génération forcée
         CheckPlayerChunkPosition(true);
     }
 
@@ -69,13 +74,19 @@ public class VoxelTerrain : MonoBehaviour
         if (forceUpdate || currentChunkPos != lastPlayerChunkPos)
         {
             lastPlayerChunkPos = currentChunkPos;
-            StartCoroutine(UpdateChunksCoroutine(currentChunkPos));
+            StartCoroutine(UpdateChunksCoroutine(currentChunkPos, forceUpdate));
         }
     }
 
-    IEnumerator UpdateChunksCoroutine(Vector2Int playerChunkGrid)
+    IEnumerator UpdateChunksCoroutine(Vector2Int playerChunkGrid, bool isFirstLoad)
     {
         isUpdatingTerrain = true;
+
+        // SÉCURITÉ : Si c'est le tout premier chargement au Start(), on fige le joueur
+        if (isFirstLoad && playerRb != null)
+        {
+            playerRb.isKinematic = true;
+        }
 
         int maxWorldX = (heightMap.width - 1) * scaleMultiplier;
         int maxWorldZ = (heightMap.height - 1) * scaleMultiplier;
@@ -115,7 +126,38 @@ public class VoxelTerrain : MonoBehaviour
             }
         }
 
+        // SÉCURITÉ : Les chunks initiaux sont faits, on libère le joueur !
+        if (isFirstLoad && playerRb != null)
+        {
+            playerRb.isKinematic = false;
+        }
+
         isUpdatingTerrain = false;
+    }
+
+    int GetSmoothedHeightAt(int x, int z, int maxWorldX, int maxWorldZ)
+    {
+        if (x < 0 || x > maxWorldX || z < 0 || z > maxWorldZ) return 0;
+
+        float imageX = (float)x / scaleMultiplier;
+        float imageZ = (float)z / scaleMultiplier;
+
+        int x0 = Mathf.FloorToInt(imageX);
+        int x1 = Mathf.Clamp(x0 + 1, 0, heightMap.width - 1);
+        int z0 = Mathf.FloorToInt(imageZ);
+        int z1 = Mathf.Clamp(z0 + 1, 0, heightMap.height - 1);
+
+        float tX = imageX - x0;
+        float tZ = imageZ - z0;
+
+        tX = tX * tX * (3f - 2f * tX);
+        tZ = tZ * tZ * (3f - 2f * tZ);
+
+        float h0 = Mathf.Lerp(heightMap.GetPixel(x0, z0).grayscale, heightMap.GetPixel(x1, z0).grayscale, tX);
+        float h1 = Mathf.Lerp(heightMap.GetPixel(x0, z1).grayscale, heightMap.GetPixel(x1, z1).grayscale, tX);
+        float finalHeightValue = Mathf.Lerp(h0, h1, tZ);
+
+        return Mathf.RoundToInt(finalHeightValue * maxHeightInBlocks);
     }
 
     void GenerateChunk(Vector2Int chunkGridPos, int maxWorldX, int maxWorldZ)
@@ -127,7 +169,7 @@ public class VoxelTerrain : MonoBehaviour
         ChunkData chunkData = new ChunkData(chunkObj);
 
         int startX = chunkGridPos.x * ChunkSize;
-        int startZ = chunkGridPos.y * ChunkSize; // Correction ici : .y au lieu de .z
+        int startZ = chunkGridPos.y * ChunkSize;
 
         for (int x = startX; x < startX + ChunkSize; x++)
         {
@@ -135,28 +177,36 @@ public class VoxelTerrain : MonoBehaviour
             {
                 if (x > maxWorldX || z > maxWorldZ) continue;
 
-                float imageX = (float)x / scaleMultiplier;
-                float imageZ = (float)z / scaleMultiplier;
+                int surfaceY = GetSmoothedHeightAt(x, z, maxWorldX, maxWorldZ);
 
-                int x0 = Mathf.FloorToInt(imageX);
-                int x1 = Mathf.Clamp(x0 + 1, 0, heightMap.width - 1);
-                int z0 = Mathf.FloorToInt(imageZ);
-                int z1 = Mathf.Clamp(z0 + 1, 0, heightMap.height - 1);
+                int hLeft = GetSmoothedHeightAt(x - 1, z, maxWorldX, maxWorldZ);
+                int hRight = GetSmoothedHeightAt(x + 1, z, maxWorldX, maxWorldZ);
+                int hDown = GetSmoothedHeightAt(x, z - 1, maxWorldX, maxWorldZ);
+                int hUp = GetSmoothedHeightAt(x, z + 1, maxWorldX, maxWorldZ);
 
-                float h0 = Mathf.Lerp(heightMap.GetPixel(x0, z0).grayscale, heightMap.GetPixel(x1, z0).grayscale, imageX - x0);
-                float h1 = Mathf.Lerp(heightMap.GetPixel(x0, z1).grayscale, heightMap.GetPixel(x1, z1).grayscale, imageX - x0);
-                float finalHeightValue = Mathf.Lerp(h0, h1, imageZ - z0);
+                int lowestNeighbor = surfaceY;
+                if (x > 0) lowestNeighbor = Mathf.Min(lowestNeighbor, hLeft);
+                if (x < maxWorldX) lowestNeighbor = Mathf.Min(lowestNeighbor, hRight);
+                if (z > 0) lowestNeighbor = Mathf.Min(lowestNeighbor, hDown);
+                if (z < maxWorldZ) lowestNeighbor = Mathf.Min(lowestNeighbor, hUp);
 
-                int blockY = Mathf.RoundToInt(finalHeightValue * maxHeightInBlocks);
-                Vector3Int blockCoords = new Vector3Int(x, blockY, z);
+                int minY = lowestNeighbor;
 
-                Vector3 worldPos = new Vector3(x, blockY, z);
-                GameObject newBlock = Instantiate(cubePrefab, worldPos, Quaternion.identity, chunkObj.transform);
+                for (int currentY = surfaceY; currentY >= minY; currentY--)
+                {
+                    Vector3Int blockCoords = new Vector3Int(x, currentY, z);
 
-                Collider blockCollider = newBlock.GetComponent<Collider>();
-                if (blockCollider != null) blockCollider.enabled = false;
+                    if (!chunkData.blocks.ContainsKey(blockCoords))
+                    {
+                        Vector3 worldPos = new Vector3(x, currentY, z);
+                        GameObject newBlock = Instantiate(cubePrefab, worldPos, Quaternion.identity, chunkObj.transform);
 
-                chunkData.blocks.Add(blockCoords, newBlock);
+                        Collider blockCollider = newBlock.GetComponent<Collider>();
+                        if (blockCollider != null) blockCollider.enabled = false;
+
+                        chunkData.blocks.Add(blockCoords, newBlock);
+                    }
+                }
             }
         }
 
@@ -203,7 +253,7 @@ public class VoxelTerrain : MonoBehaviour
                     for (int w = 0; w < width; w++)
                     {
                         Vector2Int checkPoint = new Vector2Int(p.x + w, p.y + length);
-                        if (!points.Contains(checkPoint) || visited.Contains(checkPoint) || (p.y + length) >= (chunkGridPos.y * ChunkSize + ChunkSize)) // Correction ici : .y au lieu de .z
+                        if (!points.Contains(checkPoint) || visited.Contains(checkPoint) || (p.y + length) >= (chunkGridPos.y * ChunkSize + ChunkSize))
                         {
                             canExpandZ = false;
                             break;
