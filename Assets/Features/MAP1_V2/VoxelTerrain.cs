@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class VoxelTerrain : MonoBehaviour
@@ -12,15 +13,32 @@ public class VoxelTerrain : MonoBehaviour
     public int maxHeightInBlocks = 64;
     public int scaleMultiplier = 4;
 
-    [Header("Optimisation & Distances")]
-    public bool renderEntireMap = false;     // Si coché, affiche TOUTE la map d'un coup
-    public int viewRadiusInBlocks = 40;
+    [Header("Système de Chunks")]
+    [Tooltip("Nombre de chunks affichés autour du joueur")]
+    public int chunkViewDistance = 4;
+    public const int ChunkSize = 16; // Taille fixe d'un chunk (16x16 blocs)
 
     [Header("Débogage Visuel")]
     public bool showColliderWireframe = true;
 
-    private Dictionary<Vector3Int, GameObject> activeBlocks = new Dictionary<Vector3Int, GameObject>();
-    private Vector3Int lastPlayerBlockPos;
+    // Stockage des chunks actifs : Clé = (ChunkX, ChunkZ)
+    private Dictionary<Vector2Int, ChunkData> activeChunks = new Dictionary<Vector2Int, ChunkData>();
+    private Vector2Int lastPlayerChunkPos = new Vector2Int(-999, -999);
+    private bool isUpdatingTerrain = false;
+
+    // Classe interne pour structurer un Chunk
+    private class ChunkData
+    {
+        public GameObject chunkContainer;
+        public Dictionary<Vector3Int, GameObject> blocks;
+        public GameObject colliderContainer;
+
+        public ChunkData(GameObject container)
+        {
+            chunkContainer = container;
+            blocks = new Dictionary<Vector3Int, GameObject>();
+        }
+    }
 
     void Start()
     {
@@ -32,127 +50,136 @@ public class VoxelTerrain : MonoBehaviour
 
         if (heightMap == null || cubePrefab == null || player == null) return;
 
-        UpdateTerrain();
-        lastPlayerBlockPos = GetPlayerBlockPos();
+        CheckPlayerChunkPosition(true);
     }
 
     void Update()
     {
-        // Si on affiche toute la carte, pas besoin de recalculer les distances à chaque frame !
-        if (renderEntireMap || player == null) return;
+        if (player == null || isUpdatingTerrain) return;
 
-        Vector3Int currentPlayerBlockPos = GetPlayerBlockPos();
-        if (Mathf.Abs(currentPlayerBlockPos.x - lastPlayerBlockPos.x) >= 1 || Mathf.Abs(currentPlayerBlockPos.z - lastPlayerBlockPos.z) >= 1)
+        CheckPlayerChunkPosition(false);
+    }
+
+    void CheckPlayerChunkPosition(bool forceUpdate)
+    {
+        int playerChunkX = Mathf.FloorToInt(player.position.x / ChunkSize);
+        int playerChunkZ = Mathf.FloorToInt(player.position.z / ChunkSize);
+        Vector2Int currentChunkPos = new Vector2Int(playerChunkX, playerChunkZ);
+
+        if (forceUpdate || currentChunkPos != lastPlayerChunkPos)
         {
-            lastPlayerBlockPos = currentPlayerBlockPos;
-            UpdateTerrain();
+            lastPlayerChunkPos = currentChunkPos;
+            StartCoroutine(UpdateChunksCoroutine(currentChunkPos));
         }
     }
 
-    Vector3Int GetPlayerBlockPos()
+    IEnumerator UpdateChunksCoroutine(Vector2Int playerChunkGrid)
     {
-        return new Vector3Int(Mathf.FloorToInt(player.position.x), 0, Mathf.FloorToInt(player.position.z));
-    }
-
-    void UpdateTerrain()
-    {
-        Vector3Int playerPos = GetPlayerBlockPos();
-        HashSet<Vector3Int> blocksShouldBeActive = new HashSet<Vector3Int>();
+        isUpdatingTerrain = true;
 
         int maxWorldX = (heightMap.width - 1) * scaleMultiplier;
         int maxWorldZ = (heightMap.height - 1) * scaleMultiplier;
+        int maxChunkX = maxWorldX / ChunkSize;
+        int maxChunkZ = maxWorldZ / ChunkSize;
 
-        bool terrainChanged = false;
+        HashSet<Vector2Int> chunksShouldBeActive = new HashSet<Vector2Int>();
 
-        // Définition des bornes de boucle selon le mode choisi
-        int startX = renderEntireMap ? 0 : playerPos.x - viewRadiusInBlocks;
-        int endX = renderEntireMap ? maxWorldX : playerPos.x + viewRadiusInBlocks;
-        int startZ = renderEntireMap ? 0 : playerPos.z - viewRadiusInBlocks;
-        int endZ = renderEntireMap ? maxWorldZ : playerPos.z + viewRadiusInBlocks;
-
-        for (int x = startX; x <= endX; x++)
+        for (int x = playerChunkGrid.x - chunkViewDistance; x <= playerChunkGrid.x + chunkViewDistance; x++)
         {
-            for (int z = startZ; z <= endZ; z++)
+            for (int z = playerChunkGrid.y - chunkViewDistance; z <= playerChunkGrid.y + chunkViewDistance; z++)
             {
-                if (x >= 0 && x <= maxWorldX && z >= 0 && z <= maxWorldZ)
+                if (x >= 0 && x <= maxChunkX && z >= 0 && z <= maxChunkZ)
                 {
-                    if (renderEntireMap || Vector2.Distance(new Vector2(playerPos.x, playerPos.z), new Vector2(x, z)) <= viewRadiusInBlocks)
-                    {
-                        float imageX = (float)x / scaleMultiplier;
-                        float imageZ = (float)z / scaleMultiplier;
-
-                        int x0 = Mathf.FloorToInt(imageX);
-                        int x1 = Mathf.Clamp(x0 + 1, 0, heightMap.width - 1);
-                        int z0 = Mathf.FloorToInt(imageZ);
-                        int z1 = Mathf.Clamp(z0 + 1, 0, heightMap.height - 1);
-
-                        float h0 = Mathf.Lerp(heightMap.GetPixel(x0, z0).grayscale, heightMap.GetPixel(x1, z0).grayscale, imageX - x0);
-                        float h1 = Mathf.Lerp(heightMap.GetPixel(x0, z1).grayscale, heightMap.GetPixel(x1, z1).grayscale, imageX - x0);
-                        float finalHeightValue = Mathf.Lerp(h0, h1, imageZ - z0);
-
-                        int blockY = Mathf.RoundToInt(finalHeightValue * maxHeightInBlocks);
-
-                        Vector3Int blockCoords = new Vector3Int(x, blockY, z);
-                        blocksShouldBeActive.Add(blockCoords);
-
-                        if (!activeBlocks.ContainsKey(blockCoords))
-                        {
-                            Vector3 worldPos = new Vector3(x, blockY, z);
-                            GameObject newBlock = Instantiate(cubePrefab, worldPos, Quaternion.identity, transform);
-
-                            // OPTIMISATION : On désactive le collider lourd individuel du cube
-                            Collider blockCollider = newBlock.GetComponent<Collider>();
-                            if (blockCollider != null) blockCollider.enabled = false;
-
-                            activeBlocks.Add(blockCoords, newBlock);
-                            terrainChanged = true;
-                        }
-                    }
+                    chunksShouldBeActive.Add(new Vector2Int(x, z));
                 }
             }
         }
 
-        List<Vector3Int> blocksToRemove = new List<Vector3Int>();
-        foreach (var block in activeBlocks)
+        List<Vector2Int> chunksToRemove = new List<Vector2Int>();
+        foreach (var chunk in activeChunks)
         {
-            if (!blocksShouldBeActive.Contains(block.Key))
+            if (!chunksShouldBeActive.Contains(chunk.Key))
             {
-                Destroy(block.Value);
-                blocksToRemove.Add(block.Key);
-                terrainChanged = true;
+                Destroy(chunk.Value.chunkContainer);
+                chunksToRemove.Add(chunk.Key);
             }
         }
-        foreach (var key in blocksToRemove) activeBlocks.Remove(key);
+        foreach (var key in chunksToRemove) activeChunks.Remove(key);
 
-        if (terrainChanged)
+        foreach (Vector2Int chunkPos in chunksShouldBeActive)
         {
-            BakeGlobalCollider();
+            if (!activeChunks.ContainsKey(chunkPos))
+            {
+                GenerateChunk(chunkPos, maxWorldX, maxWorldZ);
+                yield return null;
+            }
         }
+
+        isUpdatingTerrain = false;
     }
 
-    // Algorithme Greedy Meshing appliqué à des Box Colliders 2D horizontaux par couche de hauteur
-    void BakeGlobalCollider()
+    void GenerateChunk(Vector2Int chunkGridPos, int maxWorldX, int maxWorldZ)
     {
-        // Nettoyage de l'ancien conteneur de colliders optimisés
-        Transform oldContainer = transform.Find("Optimized_Colliders");
-        if (oldContainer != null) Destroy(oldContainer.gameObject);
+        GameObject chunkObj = new GameObject($"Chunk_{chunkGridPos.x}_{chunkGridPos.y}");
+        chunkObj.transform.SetParent(transform);
+        chunkObj.transform.localPosition = Vector3.zero;
 
-        if (activeBlocks.Count == 0) return;
+        ChunkData chunkData = new ChunkData(chunkObj);
 
-        GameObject container = new GameObject("Optimized_Colliders");
-        container.transform.SetParent(transform);
-        container.transform.localPosition = Vector3.zero;
-        container.transform.localRotation = Quaternion.identity;
+        int startX = chunkGridPos.x * ChunkSize;
+        int startZ = chunkGridPos.y * ChunkSize; // Correction ici : .y au lieu de .z
 
-        // Étape 1 : Regrouper les coordonnées X,Z par niveau de hauteur Y
+        for (int x = startX; x < startX + ChunkSize; x++)
+        {
+            for (int z = startZ; z < startZ + ChunkSize; z++)
+            {
+                if (x > maxWorldX || z > maxWorldZ) continue;
+
+                float imageX = (float)x / scaleMultiplier;
+                float imageZ = (float)z / scaleMultiplier;
+
+                int x0 = Mathf.FloorToInt(imageX);
+                int x1 = Mathf.Clamp(x0 + 1, 0, heightMap.width - 1);
+                int z0 = Mathf.FloorToInt(imageZ);
+                int z1 = Mathf.Clamp(z0 + 1, 0, heightMap.height - 1);
+
+                float h0 = Mathf.Lerp(heightMap.GetPixel(x0, z0).grayscale, heightMap.GetPixel(x1, z0).grayscale, imageX - x0);
+                float h1 = Mathf.Lerp(heightMap.GetPixel(x0, z1).grayscale, heightMap.GetPixel(x1, z1).grayscale, imageX - x0);
+                float finalHeightValue = Mathf.Lerp(h0, h1, imageZ - z0);
+
+                int blockY = Mathf.RoundToInt(finalHeightValue * maxHeightInBlocks);
+                Vector3Int blockCoords = new Vector3Int(x, blockY, z);
+
+                Vector3 worldPos = new Vector3(x, blockY, z);
+                GameObject newBlock = Instantiate(cubePrefab, worldPos, Quaternion.identity, chunkObj.transform);
+
+                Collider blockCollider = newBlock.GetComponent<Collider>();
+                if (blockCollider != null) blockCollider.enabled = false;
+
+                chunkData.blocks.Add(blockCoords, newBlock);
+            }
+        }
+
+        BakeChunkCollider(chunkData, chunkGridPos);
+        activeChunks.Add(chunkGridPos, chunkData);
+    }
+
+    void BakeChunkCollider(ChunkData chunk, Vector2Int chunkGridPos)
+    {
+        if (chunk.blocks.Count == 0) return;
+
+        GameObject colliderContainer = new GameObject("Optimized_Colliders");
+        colliderContainer.transform.SetParent(chunk.chunkContainer.transform);
+        colliderContainer.transform.localPosition = Vector3.zero;
+        chunk.colliderContainer = colliderContainer;
+
         Dictionary<int, HashSet<Vector2Int>> layers = new Dictionary<int, HashSet<Vector2Int>>();
-        foreach (var coord in activeBlocks.Keys)
+        foreach (var coord in chunk.blocks.Keys)
         {
             if (!layers.ContainsKey(coord.y)) layers[coord.y] = new HashSet<Vector2Int>();
             layers[coord.y].Add(new Vector2Int(coord.x, coord.z));
         }
 
-        // Étape 2 : Pour chaque hauteur, fusionner les blocs en grands rectangles
         foreach (var layer in layers)
         {
             int y = layer.Key;
@@ -163,14 +190,12 @@ public class VoxelTerrain : MonoBehaviour
             {
                 if (visited.Contains(p)) continue;
 
-                // Calculer la largeur maximale sur l'axe X
                 int width = 1;
-                while (points.Contains(new Vector2Int(p.x + width, p.y)) && !visited.Contains(new Vector2Int(p.x + width, p.y)))
+                while (points.Contains(new Vector2Int(p.x + width, p.y)) && !visited.Contains(new Vector2Int(p.x + width, p.y)) && (p.x + width) < (chunkGridPos.x * ChunkSize + ChunkSize))
                 {
                     width++;
                 }
 
-                // Calculer la longueur maximale sur l'axe Z (p.y représente Z ici)
                 int length = 1;
                 bool canExpandZ = true;
                 while (canExpandZ)
@@ -178,7 +203,7 @@ public class VoxelTerrain : MonoBehaviour
                     for (int w = 0; w < width; w++)
                     {
                         Vector2Int checkPoint = new Vector2Int(p.x + w, p.y + length);
-                        if (!points.Contains(checkPoint) || visited.Contains(checkPoint))
+                        if (!points.Contains(checkPoint) || visited.Contains(checkPoint) || (p.y + length) >= (chunkGridPos.y * ChunkSize + ChunkSize)) // Correction ici : .y au lieu de .z
                         {
                             canExpandZ = false;
                             break;
@@ -187,7 +212,6 @@ public class VoxelTerrain : MonoBehaviour
                     if (canExpandZ) length++;
                 }
 
-                // Marquer les coordonnées de ce grand rectangle comme traitées
                 for (int w = 0; w < width; w++)
                 {
                     for (int l = 0; l < length; l++)
@@ -196,13 +220,13 @@ public class VoxelTerrain : MonoBehaviour
                     }
                 }
 
-                // Étape 3 : Instancier le Box Collider unique et géant pour ce rectangle
-                GameObject boxObj = new GameObject($"Collider_Layer_{y}_Rect");
-                boxObj.transform.SetParent(container.transform);
+                GameObject boxObj = new GameObject($"Collider_L{y}");
+                boxObj.transform.SetParent(colliderContainer.transform);
 
                 float centerX = p.x + (width - 1) * 0.5f;
                 float centerZ = p.y + (length - 1) * 0.5f;
-                boxObj.transform.localPosition = new Vector3(centerX, y, centerZ);
+
+                boxObj.transform.position = new Vector3(centerX, y, centerZ);
 
                 BoxCollider bc = boxObj.AddComponent<BoxCollider>();
                 bc.size = new Vector3(width, 1f, length);
@@ -214,19 +238,15 @@ public class VoxelTerrain : MonoBehaviour
     {
         if (!showColliderWireframe) return;
 
-        Transform container = transform.Find("Optimized_Colliders");
-        if (container != null)
+        Gizmos.color = new Color(0f, 1f, 0f, 0.4f);
+        foreach (var chunk in activeChunks.Values)
         {
-            // Vert fluo très propre pour les contours extérieurs uniquement
-            Gizmos.color = new Color(0f, 1f, 0f, 0.8f);
-
-            foreach (Transform child in container)
+            if (chunk.colliderContainer != null)
             {
-                BoxCollider bc = child.GetComponent<BoxCollider>();
-                if (bc != null)
+                foreach (Transform child in chunk.colliderContainer.transform)
                 {
-                    // DrawWireCube dessine uniquement les arrêtes extérieures sans aucune diagonale !
-                    Gizmos.DrawWireCube(child.position, bc.size);
+                    BoxCollider bc = child.GetComponent<BoxCollider>();
+                    if (bc != null) Gizmos.DrawWireCube(child.position, bc.size);
                 }
             }
         }

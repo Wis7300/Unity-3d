@@ -1,5 +1,5 @@
 using UnityEngine;
-using UnityEngine.InputSystem; // REQUIS pour le New Input System
+using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -21,7 +21,7 @@ public class PlayerMovement : MonoBehaviour
 
     [Header("Système de Marches Voxel")]
     public float stepHeight = 1.1f;       // Hauteur max d'une marche que le joueur peut monter (1 bloc = 1m)
-    public float stepSmooth = 0.35f;      // Vitesse/force de montée de la marche ajustée pour la capsule
+    public float stepSmooth = 0.2f;       // Force de levée initiale ajustée
 
     private float dashTimer;
     private float cooldownTimer;
@@ -43,7 +43,6 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        // --- GESTION DES INPUTS VIA LE NEW INPUT SYSTEM ---
         float moveX = 0f;
         float moveZ = 0f;
 
@@ -78,7 +77,6 @@ public class PlayerMovement : MonoBehaviour
             anim.SetBool("isWalking", isMoving);
         }
 
-        // Détection du bouton Dash (Espace ou bouton Sud de la manette)
         bool dashPressed = false;
         if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame) dashPressed = true;
         if (Gamepad.current != null && Gamepad.current.buttonSouth.wasPressedThisFrame) dashPressed = true;
@@ -127,9 +125,9 @@ public class PlayerMovement : MonoBehaviour
     {
         Vector3 moveDir = inputDirection.normalized;
 
-        // Configuration pour capsule : centre abaissé à 0.15m et boîte élargie à 0.8m totale
-        Vector3 detectionCenter = transform.position + (moveDir * 0.42f) + new Vector3(0f, 0.15f, 0f);
-        Vector3 boxHalfExtents = new Vector3(0.4f, 0.15f, 0.4f);
+        // CORRECTION : On monte le centre du cube à 0.4m (au lieu de 0.15m) pour ne plus détecter le sol plat sous nos pieds
+        Vector3 detectionCenter = transform.position + (moveDir * 0.45f) + new Vector3(0f, 0.4f, 0f);
+        Vector3 boxHalfExtents = new Vector3(0.35f, 0.15f, 0.35f);
 
         Collider[] hitColliders = Physics.OverlapBox(detectionCenter, boxHalfExtents, Quaternion.identity);
 
@@ -149,8 +147,9 @@ public class PlayerMovement : MonoBehaviour
 
             if (!Physics.Raycast(rayUpperPos, moveDir, out RaycastHit hitUpper, 0.9f))
             {
+                // CORRECTION : On applique une poussée verticale plus douce (1.8f au lieu de 3.5f) pour glisser sur le bloc au lieu de sauter sauvagement
                 rb.position += new Vector3(0f, stepSmooth, 0f);
-                rb.linearVelocity = new Vector3(rb.linearVelocity.x, 3.5f, rb.linearVelocity.z);
+                rb.linearVelocity = new Vector3(rb.linearVelocity.x, 1.8f, rb.linearVelocity.z);
             }
         }
     }
@@ -160,8 +159,9 @@ public class PlayerMovement : MonoBehaviour
         if (Application.isPlaying && inputDirection.magnitude > 0.05f)
         {
             Gizmos.color = Color.cyan;
-            Vector3 detectionCenter = transform.position + (inputDirection.normalized * 0.42f) + new Vector3(0f, 0.15f, 0f);
-            Gizmos.DrawWireCube(detectionCenter, new Vector3(0.8f, 0.3f, 0.8f));
+            // Ajustement visuel du Gizmo pour correspondre à la nouvelle boîte de détection rehaussée
+            Vector3 detectionCenter = transform.position + (inputDirection.normalized * 0.45f) + new Vector3(0f, 0.4f, 0f);
+            Gizmos.DrawWireCube(detectionCenter, new Vector3(0.7f, 0.3f, 0.7f));
         }
     }
 }
