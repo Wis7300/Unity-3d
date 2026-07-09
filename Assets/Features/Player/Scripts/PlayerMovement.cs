@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem; // REQUIS pour le New Input System
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -20,7 +21,7 @@ public class PlayerMovement : MonoBehaviour
 
     [Header("Système de Marches Voxel")]
     public float stepHeight = 1.1f;       // Hauteur max d'une marche que le joueur peut monter (1 bloc = 1m)
-    public float stepSmooth = 0.2f;       // Vitesse de montée de la marche
+    public float stepSmooth = 0.35f;      // Vitesse/force de montée de la marche ajustée pour la capsule
 
     private float dashTimer;
     private float cooldownTimer;
@@ -42,8 +43,24 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        float moveZ = Input.GetAxisRaw("Vertical");
-        float moveX = Input.GetAxisRaw("Horizontal");
+        // --- GESTION DES INPUTS VIA LE NEW INPUT SYSTEM ---
+        float moveX = 0f;
+        float moveZ = 0f;
+
+        if (Keyboard.current != null)
+        {
+            if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed) moveZ += 1f;
+            if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed) moveZ -= 1f;
+            if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed) moveX -= 1f;
+            if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed) moveX += 1f;
+        }
+
+        if (Gamepad.current != null)
+        {
+            Vector2 stick = Gamepad.current.leftStick.ReadValue();
+            moveX += stick.x;
+            moveZ += stick.y;
+        }
 
         Vector3 forward = cam.transform.forward;
         Vector3 right = cam.transform.right;
@@ -61,7 +78,12 @@ public class PlayerMovement : MonoBehaviour
             anim.SetBool("isWalking", isMoving);
         }
 
-        if (Input.GetKeyDown(KeyCode.Space) && cooldownTimer <= 0)
+        // Détection du bouton Dash (Espace ou bouton Sud de la manette)
+        bool dashPressed = false;
+        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame) dashPressed = true;
+        if (Gamepad.current != null && Gamepad.current.buttonSouth.wasPressedThisFrame) dashPressed = true;
+
+        if (dashPressed && cooldownTimer <= 0)
         {
             isDashing = true;
             dashTimer = dashDuration;
@@ -95,22 +117,19 @@ public class PlayerMovement : MonoBehaviour
         rb.AddForce(Vector3.down * gravityScale, ForceMode.Acceleration);
         rb.linearVelocity = new Vector3(currentVelocity.x, rb.linearVelocity.y, currentVelocity.z);
 
-        // Lancer la détection de marche automatique basé sur la direction réelle
         if (inputDirection.magnitude > 0.05f)
         {
             StepClimb();
         }
     }
 
-    // Version volumétrique élargie pour mieux capter les blocs en face
     void StepClimb()
     {
         Vector3 moveDir = inputDirection.normalized;
 
-        // Nouvelle taille : 0.7m de large/profond et 0.4m de haut pour englober une plus grande zone
-        // On l'avance à 0.45m pour détecter le bloc une fraction de seconde plus tôt
-        Vector3 detectionCenter = transform.position + (moveDir * 0.45f) + new Vector3(0f, 0.25f, 0f);
-        Vector3 boxHalfExtents = new Vector3(0.35f, 0.2f, 0.35f);
+        // Configuration pour capsule : centre abaissé à 0.15m et boîte élargie à 0.8m totale
+        Vector3 detectionCenter = transform.position + (moveDir * 0.42f) + new Vector3(0f, 0.15f, 0f);
+        Vector3 boxHalfExtents = new Vector3(0.4f, 0.15f, 0.4f);
 
         Collider[] hitColliders = Physics.OverlapBox(detectionCenter, boxHalfExtents, Quaternion.identity);
 
@@ -131,20 +150,18 @@ public class PlayerMovement : MonoBehaviour
             if (!Physics.Raycast(rayUpperPos, moveDir, out RaycastHit hitUpper, 0.9f))
             {
                 rb.position += new Vector3(0f, stepSmooth, 0f);
-                rb.linearVelocity = new Vector3(rb.linearVelocity.x, 2.5f, rb.linearVelocity.z);
+                rb.linearVelocity = new Vector3(rb.linearVelocity.x, 3.5f, rb.linearVelocity.z);
             }
         }
     }
 
-    // Dessine le nouveau cube bleu agrandi dans l'éditeur
     private void OnDrawGizmos()
     {
         if (Application.isPlaying && inputDirection.magnitude > 0.05f)
         {
             Gizmos.color = Color.cyan;
-            Vector3 detectionCenter = transform.position + (inputDirection.normalized * 0.45f) + new Vector3(0f, 0.25f, 0f);
-            // Affichage de la boîte aux nouvelles dimensions (0.7m x 0.4m x 0.7m)
-            Gizmos.DrawWireCube(detectionCenter, new Vector3(0.7f, 0.4f, 0.7f));
+            Vector3 detectionCenter = transform.position + (inputDirection.normalized * 0.42f) + new Vector3(0f, 0.15f, 0f);
+            Gizmos.DrawWireCube(detectionCenter, new Vector3(0.8f, 0.3f, 0.8f));
         }
     }
 }

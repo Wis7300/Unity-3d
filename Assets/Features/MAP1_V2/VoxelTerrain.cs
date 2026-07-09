@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(MeshFilter), typeof(MeshCollider))]
 public class VoxelTerrain : MonoBehaviour
 {
     [Header("Configurations")]
@@ -13,20 +12,18 @@ public class VoxelTerrain : MonoBehaviour
     public int maxHeightInBlocks = 64;
     public int scaleMultiplier = 4;
 
-    [Header("Optimisation")]
+    [Header("Optimisation & Distances")]
+    public bool renderEntireMap = false;     // Si coché, affiche TOUTE la map d'un coup
     public int viewRadiusInBlocks = 40;
+
+    [Header("Débogage Visuel")]
+    public bool showColliderWireframe = true;
 
     private Dictionary<Vector3Int, GameObject> activeBlocks = new Dictionary<Vector3Int, GameObject>();
     private Vector3Int lastPlayerBlockPos;
 
-    private MeshFilter meshFilter;
-    private MeshCollider meshCollider;
-
     void Start()
     {
-        meshFilter = GetComponent<MeshFilter>();
-        meshCollider = GetComponent<MeshCollider>();
-
         if (player == null)
         {
             GameObject foundPlayer = GameObject.FindGameObjectWithTag("Player");
@@ -41,7 +38,8 @@ public class VoxelTerrain : MonoBehaviour
 
     void Update()
     {
-        if (player == null) return;
+        // Si on affiche toute la carte, pas besoin de recalculer les distances à chaque frame !
+        if (renderEntireMap || player == null) return;
 
         Vector3Int currentPlayerBlockPos = GetPlayerBlockPos();
         if (Mathf.Abs(currentPlayerBlockPos.x - lastPlayerBlockPos.x) >= 1 || Mathf.Abs(currentPlayerBlockPos.z - lastPlayerBlockPos.z) >= 1)
@@ -66,13 +64,19 @@ public class VoxelTerrain : MonoBehaviour
 
         bool terrainChanged = false;
 
-        for (int x = playerPos.x - viewRadiusInBlocks; x <= playerPos.x + viewRadiusInBlocks; x++)
+        // Définition des bornes de boucle selon le mode choisi
+        int startX = renderEntireMap ? 0 : playerPos.x - viewRadiusInBlocks;
+        int endX = renderEntireMap ? maxWorldX : playerPos.x + viewRadiusInBlocks;
+        int startZ = renderEntireMap ? 0 : playerPos.z - viewRadiusInBlocks;
+        int endZ = renderEntireMap ? maxWorldZ : playerPos.z + viewRadiusInBlocks;
+
+        for (int x = startX; x <= endX; x++)
         {
-            for (int z = playerPos.z - viewRadiusInBlocks; z <= playerPos.z + viewRadiusInBlocks; z++)
+            for (int z = startZ; z <= endZ; z++)
             {
                 if (x >= 0 && x <= maxWorldX && z >= 0 && z <= maxWorldZ)
                 {
-                    if (Vector2.Distance(new Vector2(playerPos.x, playerPos.z), new Vector2(x, z)) <= viewRadiusInBlocks)
+                    if (renderEntireMap || Vector2.Distance(new Vector2(playerPos.x, playerPos.z), new Vector2(x, z)) <= viewRadiusInBlocks)
                     {
                         float imageX = (float)x / scaleMultiplier;
                         float imageZ = (float)z / scaleMultiplier;
@@ -95,6 +99,11 @@ public class VoxelTerrain : MonoBehaviour
                         {
                             Vector3 worldPos = new Vector3(x, blockY, z);
                             GameObject newBlock = Instantiate(cubePrefab, worldPos, Quaternion.identity, transform);
+
+                            // OPTIMISATION : On désactive le collider lourd individuel du cube
+                            Collider blockCollider = newBlock.GetComponent<Collider>();
+                            if (blockCollider != null) blockCollider.enabled = false;
+
                             activeBlocks.Add(blockCoords, newBlock);
                             terrainChanged = true;
                         }
@@ -115,71 +124,111 @@ public class VoxelTerrain : MonoBehaviour
         }
         foreach (var key in blocksToRemove) activeBlocks.Remove(key);
 
-        // Si des blocs sont apparus ou ont disparu, on recalcule la hitbox globale fusionnée
         if (terrainChanged)
         {
             BakeGlobalCollider();
         }
     }
-    [Header("Débogage Visuel")]
-    public bool showColliderWireframe = true; // Case à cocher dans l'Inspecteur
 
-    // Fusionne tous les rendus des cubes en un seul maillage physique lisse et unique
+    // Algorithme Greedy Meshing appliqué à des Box Colliders 2D horizontaux par couche de hauteur
     void BakeGlobalCollider()
     {
-        MeshFilter[] meshFilters = GetComponentsInChildren<MeshFilter>();
+        // Nettoyage de l'ancien conteneur de colliders optimisés
+        Transform oldContainer = transform.Find("Optimized_Colliders");
+        if (oldContainer != null) Destroy(oldContainer.gameObject);
 
-        if (meshFilters.Length <= 1) return;
+        if (activeBlocks.Count == 0) return;
 
-        List<CombineInstance> combineList = new List<CombineInstance>();
+        GameObject container = new GameObject("Optimized_Colliders");
+        container.transform.SetParent(transform);
+        container.transform.localPosition = Vector3.zero;
+        container.transform.localRotation = Quaternion.identity;
 
-        for (int i = 0; i < meshFilters.Length; i++)
+        // Étape 1 : Regrouper les coordonnées X,Z par niveau de hauteur Y
+        Dictionary<int, HashSet<Vector2Int>> layers = new Dictionary<int, HashSet<Vector2Int>>();
+        foreach (var coord in activeBlocks.Keys)
         {
-            if (meshFilters[i].gameObject == gameObject) continue;
-            if (meshFilters[i].sharedMesh == null) continue;
-
-            CombineInstance c = new CombineInstance();
-            c.mesh = meshFilters[i].sharedMesh;
-            c.transform = transform.worldToLocalMatrix * meshFilters[i].transform.localToWorldMatrix;
-
-            combineList.Add(c);
+            if (!layers.ContainsKey(coord.y)) layers[coord.y] = new HashSet<Vector2Int>();
+            layers[coord.y].Add(new Vector2Int(coord.x, coord.z));
         }
 
-        if (combineList.Count == 0) return;
+        // Étape 2 : Pour chaque hauteur, fusionner les blocs en grands rectangles
+        foreach (var layer in layers)
+        {
+            int y = layer.Key;
+            HashSet<Vector2Int> points = layer.Value;
+            HashSet<Vector2Int> visited = new HashSet<Vector2Int>();
 
-        Mesh combinedMesh = new Mesh();
-        combinedMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            foreach (var p in points)
+            {
+                if (visited.Contains(p)) continue;
 
-        // TRUC PHYSIQUE : fusionner les sous-maillages en une seule topologie (true, true)
-        combinedMesh.CombineMeshes(combineList.ToArray(), true, true);
+                // Calculer la largeur maximale sur l'axe X
+                int width = 1;
+                while (points.Contains(new Vector2Int(p.x + width, p.y)) && !visited.Contains(new Vector2Int(p.x + width, p.y)))
+                {
+                    width++;
+                }
 
-        // Nettoie et soude virtuellement les normales pour supprimer les collisions fantômes sur les arêtes internes
-        combinedMesh.RecalculateBounds();
-        combinedMesh.RecalculateNormals();
-        combinedMesh.Optimize();
+                // Calculer la longueur maximale sur l'axe Z (p.y représente Z ici)
+                int length = 1;
+                bool canExpandZ = true;
+                while (canExpandZ)
+                {
+                    for (int w = 0; w < width; w++)
+                    {
+                        Vector2Int checkPoint = new Vector2Int(p.x + w, p.y + length);
+                        if (!points.Contains(checkPoint) || visited.Contains(checkPoint))
+                        {
+                            canExpandZ = false;
+                            break;
+                        }
+                    }
+                    if (canExpandZ) length++;
+                }
 
-        meshFilter.sharedMesh = combinedMesh;
-        meshCollider.sharedMesh = combinedMesh;
+                // Marquer les coordonnées de ce grand rectangle comme traitées
+                for (int w = 0; w < width; w++)
+                {
+                    for (int l = 0; l < length; l++)
+                    {
+                        visited.Add(new Vector2Int(p.x + w, p.y + l));
+                    }
+                }
+
+                // Étape 3 : Instancier le Box Collider unique et géant pour ce rectangle
+                GameObject boxObj = new GameObject($"Collider_Layer_{y}_Rect");
+                boxObj.transform.SetParent(container.transform);
+
+                float centerX = p.x + (width - 1) * 0.5f;
+                float centerZ = p.y + (length - 1) * 0.5f;
+                boxObj.transform.localPosition = new Vector3(centerX, y, centerZ);
+
+                BoxCollider bc = boxObj.AddComponent<BoxCollider>();
+                bc.size = new Vector3(width, 1f, length);
+            }
+        }
     }
 
-    // Dessine uniquement les contours du Mesh Collider en vert fluo si activé
     private void OnDrawGizmos()
     {
         if (!showColliderWireframe) return;
 
-        MeshCollider collider = GetComponent<MeshCollider>();
-
-        if (collider != null && collider.sharedMesh != null)
+        Transform container = transform.Find("Optimized_Colliders");
+        if (container != null)
         {
-            // Vert fluo bien visible pour les lignes
+            // Vert fluo très propre pour les contours extérieurs uniquement
             Gizmos.color = new Color(0f, 1f, 0f, 0.8f);
 
-            Gizmos.DrawWireMesh(
-                collider.sharedMesh,
-                transform.position,
-                transform.rotation,
-                transform.localScale
-            );
+            foreach (Transform child in container)
+            {
+                BoxCollider bc = child.GetComponent<BoxCollider>();
+                if (bc != null)
+                {
+                    // DrawWireCube dessine uniquement les arrêtes extérieures sans aucune diagonale !
+                    Gizmos.DrawWireCube(child.position, bc.size);
+                }
+            }
         }
     }
 }
