@@ -295,7 +295,7 @@ MonoBehaviour:
   heightMap: {fileID: 2800000, guid: ea93447bf964f894d8239bc877ab6a77, type: 3}
   cubePrefab: {fileID: 6709194922079520188, guid: 88961fbc837af204bb5bfc2cf67fbb7a, type: 3}
   player: {fileID: 1122598094}
-  maxHeightInBlocks: 120
+  maxHeightInBlocks: 516
   scaleMultiplier: 4
   chunkViewDistance: 4
   showColliderWireframe: 1
@@ -2965,7 +2965,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4872113387972882883, guid: d4eb3b43da9c8fe47bd006c7b6ffbed6, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 92.82
+      value: 170
       objectReference: {fileID: 0}
     - target: {fileID: 4872113387972882883, guid: d4eb3b43da9c8fe47bd006c7b6ffbed6, type: 3}
       propertyPath: m_LocalPosition.z
