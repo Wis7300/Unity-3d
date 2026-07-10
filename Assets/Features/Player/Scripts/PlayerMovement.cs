@@ -20,8 +20,10 @@ public class PlayerMovement : MonoBehaviour
     public float rotationSpeed = 10f;
 
     [Header("Système de Marches Voxel")]
-    public float stepHeight = 1.1f;       // Hauteur max d'une marche que le joueur peut monter (1 bloc = 1m)
-    public float stepSmooth = 0.2f;       // Force de levée initiale ajustée
+    public float stepHeight = 1.1f;       // Hauteur max d'une marche (1 bloc = 1m)
+    public float stepSmooth = 0.2f;       // Force de levée initiale
+    public float detectionDistance = 0.45f; // Distance de détection devant le joueur
+    public float footSpacing = 0.3f;       // Écartement horizontal des capteurs (largeur des pieds)
 
     private float dashTimer;
     private float cooldownTimer;
@@ -113,55 +115,98 @@ public class PlayerMovement : MonoBehaviour
     void FixedUpdate()
     {
         rb.AddForce(Vector3.down * gravityScale, ForceMode.Acceleration);
-        rb.linearVelocity = new Vector3(currentVelocity.x, rb.linearVelocity.y, currentVelocity.z);
 
-        if (inputDirection.magnitude > 0.05f)
+        if (isDashing)
         {
-            StepClimb();
+            float secureY = rb.linearVelocity.y;
+            if (secureY > 0f) secureY = 0f;
+            rb.linearVelocity = new Vector3(currentVelocity.x, secureY, currentVelocity.z);
+        }
+        else
+        {
+            rb.linearVelocity = new Vector3(currentVelocity.x, rb.linearVelocity.y, currentVelocity.z);
+
+            if (inputDirection.magnitude > 0.05f)
+            {
+                StepClimb();
+            }
         }
     }
 
+    // MISE À JOUR : Gestion par double capteur (Pied Gauche / Pied Droit)
     void StepClimb()
     {
         Vector3 moveDir = inputDirection.normalized;
 
-        // CORRECTION : On monte le centre du cube à 0.4m (au lieu de 0.15m) pour ne plus détecter le sol plat sous nos pieds
-        Vector3 detectionCenter = transform.position + (moveDir * 0.45f) + new Vector3(0f, 0.4f, 0f);
-        Vector3 boxHalfExtents = new Vector3(0.35f, 0.15f, 0.35f);
+        // Calcul du vecteur perpendiculaire pour décaler les rayons à gauche et à droite
+        Vector3 sideDir = Vector3.Cross(moveDir, Vector3.up).normalized;
+        Vector3 leftOffset = sideDir * (footSpacing * 0.5f);
+        Vector3 rightOffset = -sideDir * (footSpacing * 0.5f);
 
-        Collider[] hitColliders = Physics.OverlapBox(detectionCenter, boxHalfExtents, Quaternion.identity);
+        // Positions des capteurs pour le côté gauche
+        Vector3 leftRayLower = transform.position + leftOffset + new Vector3(0f, 0.1f, 0f);
+        Vector3 leftRayUpper = transform.position + leftOffset + new Vector3(0f, stepHeight, 0f);
 
-        bool blockDetectedAtFeet = false;
-        foreach (var col in hitColliders)
+        // Positions des capteurs pour le côté droit
+        Vector3 rightRayLower = transform.position + rightOffset + new Vector3(0f, 0.1f, 0f);
+        Vector3 rightRayUpper = transform.position + rightOffset + new Vector3(0f, stepHeight, 0f);
+
+        bool shouldClimb = false;
+
+        // 1. Analyse du côté Gauche
+        if (Physics.Raycast(leftRayLower, moveDir, out RaycastHit hitLeftLower, detectionDistance))
         {
-            if (col.gameObject != gameObject && !col.isTrigger)
+            if (hitLeftLower.collider.gameObject != gameObject && !hitLeftLower.collider.isTrigger)
             {
-                blockDetectedAtFeet = true;
-                break;
+                // Si le bas touche mais que le haut est libre, on peut monter
+                if (!Physics.Raycast(leftRayUpper, moveDir, detectionDistance))
+                {
+                    shouldClimb = true;
+                }
             }
         }
 
-        if (blockDetectedAtFeet)
+        // 2. Analyse du côté Droit (si le côté gauche n'a rien validé)
+        if (!shouldClimb && Physics.Raycast(rightRayLower, moveDir, out RaycastHit hitRightLower, detectionDistance))
         {
-            Vector3 rayUpperPos = transform.position + new Vector3(0f, stepHeight, 0f);
-
-            if (!Physics.Raycast(rayUpperPos, moveDir, out RaycastHit hitUpper, 0.9f))
+            if (hitRightLower.collider.gameObject != gameObject && !hitRightLower.collider.isTrigger)
             {
-                // CORRECTION : On applique une poussée verticale plus douce (1.8f au lieu de 3.5f) pour glisser sur le bloc au lieu de sauter sauvagement
-                rb.position += new Vector3(0f, stepSmooth, 0f);
-                rb.linearVelocity = new Vector3(rb.linearVelocity.x, 1.8f, rb.linearVelocity.z);
+                // Si le bas touche mais que le haut est libre, on peut monter
+                if (!Physics.Raycast(rightRayUpper, moveDir, detectionDistance))
+                {
+                    shouldClimb = true;
+                }
             }
+        }
+
+        // 3. Application de la montée si un des deux côtés a détecté une marche valide
+        if (shouldClimb)
+        {
+            rb.position += new Vector3(0f, stepSmooth, 0f);
+            rb.linearVelocity = new Vector3(rb.linearVelocity.x, 1.8f, rb.linearVelocity.z);
         }
     }
 
     private void OnDrawGizmos()
     {
-        if (Application.isPlaying && inputDirection.magnitude > 0.05f)
+        if (Application.isPlaying && inputDirection.magnitude > 0.05f && !isDashing)
         {
+            Vector3 moveDir = inputDirection.normalized;
+            Vector3 sideDir = Vector3.Cross(moveDir, Vector3.up).normalized;
+            Vector3 leftOffset = sideDir * (footSpacing * 0.5f);
+            Vector3 rightOffset = -sideDir * (footSpacing * 0.5f);
+
+            // Gizmos Pied Gauche
             Gizmos.color = Color.cyan;
-            // Ajustement visuel du Gizmo pour correspondre à la nouvelle boîte de détection rehaussée
-            Vector3 detectionCenter = transform.position + (inputDirection.normalized * 0.45f) + new Vector3(0f, 0.4f, 0f);
-            Gizmos.DrawWireCube(detectionCenter, new Vector3(0.7f, 0.3f, 0.7f));
+            Gizmos.DrawRay(transform.position + leftOffset + new Vector3(0f, 0.1f, 0f), moveDir * detectionDistance);
+            Gizmos.color = Color.magenta;
+            Gizmos.DrawRay(transform.position + leftOffset + new Vector3(0f, stepHeight, 0f), moveDir * detectionDistance);
+
+            // Gizmos Pied Droit
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawRay(transform.position + rightOffset + new Vector3(0f, 0.1f, 0f), moveDir * detectionDistance);
+            Gizmos.color = Color.magenta;
+            Gizmos.DrawRay(transform.position + rightOffset + new Vector3(0f, stepHeight, 0f), moveDir * detectionDistance);
         }
     }
 }

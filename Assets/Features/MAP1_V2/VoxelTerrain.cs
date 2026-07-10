@@ -210,6 +210,33 @@ public class VoxelTerrain : MonoBehaviour
             }
         }
 
+        // --- NOUVEAU : NETTOYAGE DES FACES INUTILES ---
+        foreach (var kvp in chunkData.blocks)
+        {
+            Vector3Int localPos = kvp.Key;
+            GameObject blockObj = kvp.Value;
+
+            // Règle N°1 : La face du bas est TOUJOURS cachée (vue de dessus)
+            Transform bottomFace = blockObj.transform.Find("Bottom");
+            if (bottomFace != null) bottomFace.gameObject.SetActive(false);
+
+            // Règle N°2 : Si un voisin existe dans le dictionnaire, on désactive la face mitoyenne
+            if (chunkData.blocks.ContainsKey(localPos + Vector3Int.up))
+                blockObj.transform.Find("Top")?.gameObject.SetActive(false);
+
+            if (chunkData.blocks.ContainsKey(localPos + Vector3Int.right))
+                blockObj.transform.Find("East")?.gameObject.SetActive(false);
+
+            if (chunkData.blocks.ContainsKey(localPos + Vector3Int.left))
+                blockObj.transform.Find("West")?.gameObject.SetActive(false);
+
+            if (chunkData.blocks.ContainsKey(localPos + new Vector3Int(0, 0, 1)))
+                blockObj.transform.Find("North")?.gameObject.SetActive(false);
+
+            if (chunkData.blocks.ContainsKey(localPos + new Vector3Int(0, 0, -1)))
+                blockObj.transform.Find("South")?.gameObject.SetActive(false);
+        }
+
         BakeChunkCollider(chunkData, chunkGridPos);
         activeChunks.Add(chunkGridPos, chunkData);
     }
