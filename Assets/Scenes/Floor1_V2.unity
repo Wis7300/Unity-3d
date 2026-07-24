@@ -499,7 +499,7 @@ MonoBehaviour:
   rotationSpeed: 0.5
   currentDistance: 10
   minDistance: 3
-  maxDistance: 25
+  maxDistance: 15
   zoomSpeed: 2
   cameraRadius: 0.5
 --- !u!114 &499816369
@@ -1445,7 +1445,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1140365219
 Transform:
   m_ObjectHideFlags: 0
@@ -1494,12 +1494,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CaveFloorGenerator
   mapWidth: 60
   mapLength: 60
-  wallHeight: 4
-  minRooms: 4
-  maxRooms: 7
+  wallBaseHeight: 6
+  stepY: 0.2
+  terrainHeightScale: 2.5
+  terrainFrequency: 0.05
+  wallElevationFactor: 1.2
   minRoomSize: 6
   maxRoomSize: 12
   corridorWidth: 2
+  corridorWaviness: 0.15
   useRandomSeed: 1
   seed: 12345
   wallBlockPrefab: {fileID: 6709194922079520188, guid: 88961fbc837af204bb5bfc2cf67fbb7a, type: 3}
