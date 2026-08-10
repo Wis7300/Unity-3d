@@ -1492,23 +1492,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c91b1897701a4174497e52a03a464da3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CaveFloorGenerator
-  mapWidth: 60
-  mapLength: 60
-  wallBaseHeight: 6
+  mapMask: {fileID: 2800000, guid: 4ce97866b85570f46980b3d0f8f8ae31, type: 3}
+  heightGradient: {fileID: 2800000, guid: 83d0c19a7897e444686d329aa89abebf, type: 3}
+  maxGradientHeight: 4
   stepY: 0.2
-  terrainHeightScale: 2.5
-  terrainFrequency: 0.05
-  wallElevationFactor: 1.2
-  minRoomSize: 6
-  maxRoomSize: 12
-  corridorWidth: 2
-  corridorWaviness: 0.15
-  useRandomSeed: 1
-  seed: 12345
-  wallBlockPrefab: {fileID: 6709194922079520188, guid: 88961fbc837af204bb5bfc2cf67fbb7a, type: 3}
-  floorBlockPrefab: {fileID: 6709194922079520188, guid: 88961fbc837af204bb5bfc2cf67fbb7a, type: 3}
-  exitStairsPrefab: {fileID: 0}
-  playerTransform: {fileID: 1122598094}
+  wallHeight: 3
+  mountainSlope: 0.5
+  cubePrefab: {fileID: 6709194922079520188, guid: 88961fbc837af204bb5bfc2cf67fbb7a, type: 3}
+  mapMaterial: {fileID: 0}
 --- !u!4 &1163485671
 Transform:
   m_ObjectHideFlags: 0

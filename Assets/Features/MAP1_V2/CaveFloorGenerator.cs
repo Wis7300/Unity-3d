@@ -8,26 +8,27 @@ public class ImageToVoxelMap : MonoBehaviour
     public Texture2D heightGradient; // Gradient_100_100.png
 
     [Header("Paramètres de Hauteur")]
-    public float maxGradientHeight = 4f; // Élévation maximale du dégradé
-    public float stepY = 0.25f;          // Grille de hauteur (0.25)
+    public float maxGradientHeight = 4f;
+    public float stepY = 0.25f;          // Pas du chemin
     public float wallHeight = 3f;        // Hauteur de base de la montagne (+3)
-    public float mountainSlope = 0.5f;   // Pente de la montagne par bloc de distance
+    public float mountainSlope = 0.5f;   // Élévation par bloc de distance
 
     [Header("Prefab Unique (Cube 1x1x1)")]
     public GameObject cubePrefab;
+    public Material mapMaterial; // Matériau à appliquer au mesh final
 
-    [ContextMenu("Générer la Carte depuis l'Image")]
+    [ContextMenu("Générer la Carte depuis l'Image (Optimisé)")]
     public void GenerateMap()
     {
-        // 1. Nettoyage de la scène
+        // 1. Nettoyage rapide
         while (transform.childCount > 0)
         {
             DestroyImmediate(transform.GetChild(0).gameObject);
         }
 
-        if (mapMask == null || heightGradient == null)
+        if (mapMask == null || heightGradient == null || cubePrefab == null)
         {
-            Debug.LogError("Il manque l'image de masque ou de dégradé !");
+            Debug.LogError("Vérifie que les images et le cubePrefab sont bien assignés !");
             return;
         }
 
@@ -52,11 +53,9 @@ public class ImageToVoxelMap : MonoBehaviour
                 Color maskColor = mapMask.GetPixel(x, z);
                 Color gradColor = heightGradient.GetPixel(x, z);
 
-                // Hauteur du dégradé lissée par pas de 0.25
                 float rawH = gradColor.grayscale * maxGradientHeight;
                 rawPathHeight[x, z] = Mathf.Round(rawH / stepY) * stepY;
 
-                // Si le pixel est blanc (chemin)
                 if (maskColor.r > 0.5f)
                 {
                     isPath[x, z] = true;
@@ -67,7 +66,7 @@ public class ImageToVoxelMap : MonoBehaviour
             }
         }
 
-        // 3. Propagation BFS pour calculer les distances au chemin
+        // 3. Propagation BFS (Distances)
         Vector2Int[] directions = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
 
         while (queue.Count > 0)
@@ -90,40 +89,41 @@ public class ImageToVoxelMap : MonoBehaviour
             }
         }
 
-        // 4. Calcul de la grille des hauteurs finales
+        // 4. Calcul des hauteurs finales
         for (int x = 0; x < width; x++)
         {
             for (int z = 0; z < length; z++)
             {
                 if (isPath[x, z])
                 {
-                    // Le chemin garde sa variation douce tous les 0.25
                     finalHeightGrid[x, z] = rawPathHeight[x, z];
                 }
                 else
                 {
-                    // La base de la montagne se cale sur le chemin (+ 3 blocs)
                     float baseMountainHeight = nearestPathHeight[x, z] + wallHeight;
-
-                    // L'élévation due à l'éloignement se fait par blocs entiers (sauts de 1)
                     float addedHeight = Mathf.Round(distanceToPath[x, z] * mountainSlope);
-
                     finalHeightGrid[x, z] = baseMountainHeight + addedHeight;
                 }
             }
         }
 
-        // 5. Instanciation des cubes 1x1x1
+        // 5. Génération directe en mémoire (SANS Instantiate ni Destroy)
+        Mesh cubeMesh = cubePrefab.GetComponent<MeshFilter>().sharedMesh;
+        List<CombineInstance> combineList = new List<CombineInstance>();
+
         for (int x = 0; x < width; x++)
         {
             for (int z = 0; z < length; z++)
             {
                 float targetY = finalHeightGrid[x, z];
 
-                // Pose du cube de surface
-                Instantiate(cubePrefab, new Vector3(x, targetY, z), Quaternion.identity, transform);
+                // A. Bloc du dessus (Surface)
+                CombineInstance topBlock = new CombineInstance();
+                topBlock.mesh = cubeMesh;
+                topBlock.transform = Matrix4x4.TRS(new Vector3(x, targetY, z), Quaternion.identity, Vector3.one);
+                combineList.Add(topBlock);
 
-                // Comblement des vides verticaux sous le bloc (si la marche avec le voisin est haute)
+                // B. Recherche du voisin le plus bas
                 float minNeighborY = targetY;
                 foreach (Vector2Int dir in directions)
                 {
@@ -131,19 +131,34 @@ public class ImageToVoxelMap : MonoBehaviour
                     int nz = z + dir.y;
                     if (nx >= 0 && nx < width && nz >= 0 && nz < length)
                     {
-                        if (finalHeightGrid[nx, nz] < minNeighborY)
-                        {
-                            minNeighborY = finalHeightGrid[nx, nz];
-                        }
+                        if (finalHeightGrid[nx, nz] < minNeighborY) minNeighborY = finalHeightGrid[nx, nz];
                     }
                 }
 
-                // Si un voisin est plus bas, on remplit verticalement avec le cube 1x1 pour boucher le trou
-                for (float fillY = targetY - 1f; fillY >= minNeighborY; fillY -= 1f)
+                // C. Génération des blocs verticaux UNIQUEMENT si un trou est visible
+                for (float fillY = targetY - stepY; fillY >= minNeighborY; fillY -= stepY)
                 {
-                    Instantiate(cubePrefab, new Vector3(x, fillY, z), Quaternion.identity, transform);
+                    CombineInstance fillBlock = new CombineInstance();
+                    fillBlock.mesh = cubeMesh;
+                    fillBlock.transform = Matrix4x4.TRS(new Vector3(x, fillY, z), Quaternion.identity, Vector3.one);
+                    combineList.Add(fillBlock);
                 }
             }
         }
+
+        // 6. Application directe du Mesh final
+        GameObject combinedMap = new GameObject("GeneratedVoxelMap");
+        combinedMap.transform.parent = transform;
+
+        MeshFilter finalMeshFilter = combinedMap.AddComponent<MeshFilter>();
+        MeshRenderer finalMeshRenderer = combinedMap.AddComponent<MeshRenderer>();
+        MeshCollider finalCollider = combinedMap.AddComponent<MeshCollider>();
+
+        finalMeshFilter.sharedMesh = new Mesh();
+        finalMeshFilter.sharedMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        finalMeshFilter.sharedMesh.CombineMeshes(combineList.ToArray(), true, true);
+
+        finalMeshRenderer.sharedMaterial = mapMaterial != null ? mapMaterial : cubePrefab.GetComponent<MeshRenderer>().sharedMaterial;
+        finalCollider.sharedMesh = finalMeshFilter.sharedMesh;
     }
 }
