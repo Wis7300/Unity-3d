@@ -163,6 +163,8 @@ public class ImageToVoxelMap : MonoBehaviour
         collisionMesh.SetVertices(colVerts);
         collisionMesh.SetTriangles(colTris, 0);
 
+        collisionMesh.RecalculateNormals();
+
         MeshCollider collider = mapObj.AddComponent<MeshCollider>();
         collider.sharedMesh = collisionMesh;
 
