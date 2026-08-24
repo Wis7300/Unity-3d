@@ -4,31 +4,32 @@ using UnityEngine;
 public class ImageToVoxelMap : MonoBehaviour
 {
     [Header("Images de Référence")]
-    public Texture2D mapMask;       // Pixil-frame-0.png
-    public Texture2D heightGradient; // Gradient_100_100.png
+    public Texture2D mapMask;           // Pixil-frame-0.png (Chemin)
+    public Texture2D heightModifierMap; // Taches: Noir (+0.1), Blanc (-0.1), Gris (0)
 
     [Header("Paramètres de Hauteur")]
-    public float maxGradientHeight = 4f;
-    public float stepY = 0.25f;          // Pas du chemin
     public float wallHeight = 3f;        // Hauteur de base de la montagne (+3)
     public float mountainSlope = 0.5f;   // Élévation par bloc de distance
 
-    [Header("Prefab Unique (Cube 1x1x1)")]
-    public GameObject cubePrefab;
-    public Material mapMaterial; // Matériau à appliquer au mesh final
+    [Header("Rendu et Optimisation")]
+    public Material mapMaterial;
+    public bool showHitboxes = false;    // Coche ça pour voir les hitboxes en vert
 
-    [ContextMenu("Générer la Carte depuis l'Image (Optimisé)")]
+    // Variables internes pour le mesh de collision (Hitbox)
+    private Mesh collisionMesh;
+
+    [ContextMenu("Générer la Carte depuis l'Image (Ultra-Optimisé)")]
     public void GenerateMap()
     {
-        // 1. Nettoyage rapide
+        // 1. Nettoyage
         while (transform.childCount > 0)
         {
             DestroyImmediate(transform.GetChild(0).gameObject);
         }
 
-        if (mapMask == null || heightGradient == null || cubePrefab == null)
+        if (mapMask == null || heightModifierMap == null)
         {
-            Debug.LogError("Vérifie que les images et le cubePrefab sont bien assignés !");
+            Debug.LogError("Vérifie que les images mapMask et heightModifierMap sont assignées !");
             return;
         }
 
@@ -36,129 +37,173 @@ public class ImageToVoxelMap : MonoBehaviour
         int length = mapMask.height;
 
         bool[,] isPath = new bool[width, length];
-        float[,] rawPathHeight = new float[width, length];
-        int[,] distanceToPath = new int[width, length];
-        float[,] nearestPathHeight = new float[width, length];
         float[,] finalHeightGrid = new float[width, length];
-
+        int[,] distanceToPath = new int[width, length];
         Queue<Vector2Int> queue = new Queue<Vector2Int>();
 
-        // 2. Lecture des textures
+        // 2. Lecture des textures et calcul des modificateurs
         for (int x = 0; x < width; x++)
         {
             for (int z = 0; z < length; z++)
             {
                 distanceToPath[x, z] = 999999;
 
-                Color maskColor = mapMask.GetPixel(x, z);
-                Color gradColor = heightGradient.GetPixel(x, z);
+                // Noir (0) = +0.1 | Blanc (1) = -0.1 | Gris (0.5) = 0
+                float gray = heightModifierMap.GetPixel(x, z).grayscale;
+                float modifier = (0.5f - gray) * 0.2f; // Donne exactement entre -0.1 et +0.1
 
-                float rawH = gradColor.grayscale * maxGradientHeight;
-                rawPathHeight[x, z] = Mathf.Round(rawH / stepY) * stepY;
-
-                if (maskColor.r > 0.5f)
+                if (mapMask.GetPixel(x, z).r > 0.5f)
                 {
                     isPath[x, z] = true;
                     distanceToPath[x, z] = 0;
-                    nearestPathHeight[x, z] = rawPathHeight[x, z];
+                    finalHeightGrid[x, z] = modifier; // Hauteur du chemin = modificateur
                     queue.Enqueue(new Vector2Int(x, z));
+                }
+                else
+                {
+                    finalHeightGrid[x, z] = modifier; // On stocke temporairement le modificateur
                 }
             }
         }
 
-        // 3. Propagation BFS (Distances)
-        Vector2Int[] directions = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
-
+        // 3. Propagation BFS pour les distances
+        Vector2Int[] dirs = { Vector2Int.up, Vector2Int.down, Vector2Int.left, Vector2Int.right };
         while (queue.Count > 0)
         {
             Vector2Int current = queue.Dequeue();
-
-            foreach (Vector2Int dir in directions)
+            foreach (Vector2Int dir in dirs)
             {
                 Vector2Int neighbor = current + dir;
-
                 if (neighbor.x >= 0 && neighbor.x < width && neighbor.y >= 0 && neighbor.y < length)
                 {
                     if (distanceToPath[current.x, current.y] + 1 < distanceToPath[neighbor.x, neighbor.y])
                     {
                         distanceToPath[neighbor.x, neighbor.y] = distanceToPath[current.x, current.y] + 1;
-                        nearestPathHeight[neighbor.x, neighbor.y] = nearestPathHeight[current.x, current.y];
                         queue.Enqueue(neighbor);
                     }
                 }
             }
         }
 
-        // 4. Calcul des hauteurs finales
+        // 4. Calcul des hauteurs finales de la montagne
         for (int x = 0; x < width; x++)
         {
             for (int z = 0; z < length; z++)
             {
-                if (isPath[x, z])
+                if (!isPath[x, z])
                 {
-                    finalHeightGrid[x, z] = rawPathHeight[x, z];
-                }
-                else
-                {
-                    float baseMountainHeight = nearestPathHeight[x, z] + wallHeight;
                     float addedHeight = Mathf.Round(distanceToPath[x, z] * mountainSlope);
-                    finalHeightGrid[x, z] = baseMountainHeight + addedHeight;
+                    finalHeightGrid[x, z] += wallHeight + addedHeight;
                 }
             }
         }
 
-        // 5. Génération directe en mémoire (SANS Instantiate ni Destroy)
-        Mesh cubeMesh = cubePrefab.GetComponent<MeshFilter>().sharedMesh;
-        List<CombineInstance> combineList = new List<CombineInstance>();
+        // 5. Génération procédurale du Mesh (Faces visibles uniquement)
+        List<Vector3> verts = new List<Vector3>();
+        List<int> tris = new List<int>();
+        List<Vector2> uvs = new List<Vector2>();
+
+        // Listes séparées pour la Hitbox (Faces du dessus uniquement)
+        List<Vector3> colVerts = new List<Vector3>();
+        List<int> colTris = new List<int>();
+
+        float s = 0.5f; // Demi-taille du bloc
 
         for (int x = 0; x < width; x++)
         {
             for (int z = 0; z < length; z++)
             {
-                float targetY = finalHeightGrid[x, z];
+                float h = finalHeightGrid[x, z];
 
-                // A. Bloc du dessus (Surface)
-                CombineInstance topBlock = new CombineInstance();
-                topBlock.mesh = cubeMesh;
-                topBlock.transform = Matrix4x4.TRS(new Vector3(x, targetY, z), Quaternion.identity, Vector3.one);
-                combineList.Add(topBlock);
+                // --- FACE DU DESSUS (Visuel + Hitbox) ---
+                Vector3 p0 = new Vector3(x - s, h, z - s);
+                Vector3 p1 = new Vector3(x - s, h, z + s);
+                Vector3 p2 = new Vector3(x + s, h, z + s);
+                Vector3 p3 = new Vector3(x + s, h, z - s);
 
-                // B. Recherche du voisin le plus bas
-                float minNeighborY = targetY;
-                foreach (Vector2Int dir in directions)
-                {
-                    int nx = x + dir.x;
-                    int nz = z + dir.y;
-                    if (nx >= 0 && nx < width && nz >= 0 && nz < length)
-                    {
-                        if (finalHeightGrid[nx, nz] < minNeighborY) minNeighborY = finalHeightGrid[nx, nz];
-                    }
-                }
+                AddQuad(p0, p1, p2, p3, verts, tris, uvs);
+                AddQuad(p0, p1, p2, p3, colVerts, colTris, null); // Hitbox optimisée !
 
-                // C. Génération des blocs verticaux UNIQUEMENT si un trou est visible
-                for (float fillY = targetY - stepY; fillY >= minNeighborY; fillY -= stepY)
-                {
-                    CombineInstance fillBlock = new CombineInstance();
-                    fillBlock.mesh = cubeMesh;
-                    fillBlock.transform = Matrix4x4.TRS(new Vector3(x, fillY, z), Quaternion.identity, Vector3.one);
-                    combineList.Add(fillBlock);
-                }
+                // --- FACES LATÉRALES (Visuel uniquement, pas de hitbox) ---
+                // Nord (+z)
+                if (z == length - 1 || finalHeightGrid[x, z + 1] < h)
+                    AddQuad(p2, p1, new Vector3(x - s, GetNeighborH(x, z + 1, width, length, finalHeightGrid), z + s), new Vector3(x + s, GetNeighborH(x, z + 1, width, length, finalHeightGrid), z + s), verts, tris, uvs);
+
+                // Sud (-z)
+                if (z == 0 || finalHeightGrid[x, z - 1] < h)
+                    AddQuad(p0, p3, new Vector3(x + s, GetNeighborH(x, z - 1, width, length, finalHeightGrid), z - s), new Vector3(x - s, GetNeighborH(x, z - 1, width, length, finalHeightGrid), z - s), verts, tris, uvs);
+
+                // Est (+x)
+                if (x == width - 1 || finalHeightGrid[x + 1, z] < h)
+                    AddQuad(p3, p2, new Vector3(x + s, GetNeighborH(x + 1, z, width, length, finalHeightGrid), z + s), new Vector3(x + s, GetNeighborH(x + 1, z, width, length, finalHeightGrid), z - s), verts, tris, uvs);
+
+                // Ouest (-x)
+                if (x == 0 || finalHeightGrid[x - 1, z] < h)
+                    AddQuad(p1, p0, new Vector3(x - s, GetNeighborH(x - 1, z, width, length, finalHeightGrid), z - s), new Vector3(x - s, GetNeighborH(x - 1, z, width, length, finalHeightGrid), z + s), verts, tris, uvs);
             }
         }
 
-        // 6. Application directe du Mesh final
-        GameObject combinedMap = new GameObject("GeneratedVoxelMap");
-        combinedMap.transform.parent = transform;
+        // 6. Création des objets et assignation des Meshes
+        GameObject mapObj = new GameObject("GeneratedVoxelMap");
+        mapObj.transform.parent = transform;
+        mapObj.transform.localPosition = Vector3.zero;
 
-        MeshFilter finalMeshFilter = combinedMap.AddComponent<MeshFilter>();
-        MeshRenderer finalMeshRenderer = combinedMap.AddComponent<MeshRenderer>();
-        MeshCollider finalCollider = combinedMap.AddComponent<MeshCollider>();
+        // Visuel
+        Mesh visualMesh = new Mesh { indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+        visualMesh.SetVertices(verts);
+        visualMesh.SetTriangles(tris, 0);
+        visualMesh.SetUVs(0, uvs);
+        visualMesh.RecalculateNormals();
 
-        finalMeshFilter.sharedMesh = new Mesh();
-        finalMeshFilter.sharedMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-        finalMeshFilter.sharedMesh.CombineMeshes(combineList.ToArray(), true, true);
+        mapObj.AddComponent<MeshFilter>().sharedMesh = visualMesh;
+        mapObj.AddComponent<MeshRenderer>().sharedMaterial = mapMaterial;
 
-        finalMeshRenderer.sharedMaterial = mapMaterial != null ? mapMaterial : cubePrefab.GetComponent<MeshRenderer>().sharedMaterial;
-        finalCollider.sharedMesh = finalMeshFilter.sharedMesh;
+        // Collision optimisée
+        collisionMesh = new Mesh { indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+        collisionMesh.SetVertices(colVerts);
+        collisionMesh.SetTriangles(colTris, 0);
+
+        MeshCollider collider = mapObj.AddComponent<MeshCollider>();
+        collider.sharedMesh = collisionMesh;
+
+        Debug.Log($"Carte générée ! Visuel: {verts.Count} vertices | Hitbox optimisée: {colVerts.Count} vertices.");
+    }
+
+    // Helper pour récupérer la hauteur d'un voisin (ou 0 si on est au bord de la map)
+    private float GetNeighborH(int x, int z, int w, int l, float[,] grid)
+    {
+        if (x < 0 || x >= w || z < 0 || z >= l) return 0f; // Bords de la map tombent à Y=0
+        return grid[x, z];
+    }
+
+    // Helper pour générer un carré (Quad) rapidement
+    private void AddQuad(Vector3 v1, Vector3 v2, Vector3 v3, Vector3 v4, List<Vector3> vertices, List<int> triangles, List<Vector2> uvs)
+    {
+        int index = vertices.Count;
+        vertices.Add(v1); vertices.Add(v2); vertices.Add(v3); vertices.Add(v4);
+
+        triangles.Add(index); triangles.Add(index + 1); triangles.Add(index + 2);
+        triangles.Add(index); triangles.Add(index + 2); triangles.Add(index + 3);
+
+        if (uvs != null)
+        {
+            uvs.Add(new Vector2(0, 0));
+            uvs.Add(new Vector2(0, 1));
+            uvs.Add(new Vector2(1, 1));
+            uvs.Add(new Vector2(1, 0));
+        }
+    }
+
+    // 7. Affichage des hitboxes en vert dans l'éditeur
+    private void OnDrawGizmos()
+    {
+        if (showHitboxes && collisionMesh != null)
+        {
+            Gizmos.color = new Color(0f, 1f, 0f, 0.4f); // Vert transparent
+            Gizmos.matrix = transform.localToWorldMatrix;
+
+            // Dessine la hitbox (qui ne contient QUE les faces du dessus)
+            Gizmos.DrawWireMesh(collisionMesh);
+        }
     }
 }
